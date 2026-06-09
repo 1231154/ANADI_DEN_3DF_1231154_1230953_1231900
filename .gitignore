@@ -67,3 +67,7 @@ desktop.ini
 
 # Claude Code (configurações locais)
 .claude/
+
+# Imagens
+*.png
+*.jpg
