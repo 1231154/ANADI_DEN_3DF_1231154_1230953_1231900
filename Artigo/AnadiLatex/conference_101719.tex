@@ -1,0 +1,611 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{placeins}
+\usepackage{float}
+\setlength{\emergencystretch}{1em}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\pagestyle{plain}
+\begin{document}
+
+\title{Assessment of Public Lighting Efficiency Impact for Integration of Electric Vehicle Charging Infrastructure}
+
+\author{\IEEEauthorblockN{Pedro Ferreira}
+\IEEEauthorblockA{\textit{Student ID: 1231900} \\
+\textit{ISEP}\\
+Porto, Portugal \\
+1231900@isep.ipp.pt}
+\and
+\IEEEauthorblockN{José Oliveira}
+\IEEEauthorblockA{\textit{Student ID: 1231154} \\
+\textit{ISEP}\\
+Porto, Portugal \\
+1231154@isep.ipp.pt}
+\and
+\IEEEauthorblockN{Rafael Moreira}
+\IEEEauthorblockA{\textit{Student ID: 1230953} \\
+\textit{ISEP}\\
+Porto, Portugal \\
+1230953@isep.ipp.pt}
+}
+
+\maketitle
+
+\begin{abstract}
+This paper presents a quantitative analysis of the impact of the transition to LED technology in public lighting on the municipal electrical grid's capacity to accommodate electric vehicle (EV) charging infrastructure. The primary objective was to assess the viability of allocating the power released by modernization of distribution transformer substations (PTDs) for EV charging station deployment. Using Python for data processing and analysis, real data provided by e-REDES was explored. The methodology included exploratory data analysis, statistical inference tests comparing occupancy levels between regions, and a multiple linear regression model to predict average grid load. Results demonstrate that the replacement of inefficient luminaires liberates sufficient capacity in specific municipalities, enabling sustainable expansion of electric mobility without compromising the operational stability of the distribution network.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Public Lighting, Electric Mobility, Energy Efficiency, Distribution Transformers, Multiple Linear Regression, Python.
+\end{IEEEkeywords}
+
+\section*{Abbreviations and Notation}
+\label{sec:abbrev}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{p{0.16\columnwidth}p{0.70\columnwidth}}
+\toprule
+\textbf{Abbrev.} & \textbf{Definition} \\
+\midrule
+ANOVA & Analysis of Variance \\
+BP & Breusch-Pagan test \\
+DW & Durbin-Watson statistic \\
+EDA & Exploratory Data Analysis \\
+ETL & Extract, Transform, Load \\
+EV & Electric Vehicle \\
+IQR & Interquartile Range \\
+IP & Public Lighting (Illuminated Infrastructure) \\
+LED & Light Emitting Diode \\
+OLS & Ordinary Least Squares \\
+PTD & Distribution Transformer Substation (Medium-Voltage Transformer Post) \\
+VIF & Variance Inflation Factor \\
+\textit{f} & Simultaneity factor (fraction of chargers active simultaneously) \\
+\textit{D} & Final viability margin (P$_{Folga}$ + $\Delta P_{LED}$ -- P$_{VE}$) \\
+\midrule
+\textbf{Units:} & \\
+GVA & Gigavolt-ampere \\
+kW & Kilowatt \\
+kVA & Kilovolt-ampere \\
+MW & Megawatt \\
+W & Watt \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Introduction}
+
+In the context of climate emergency and European energy transition, urban decarbonization has become a strategic imperative. The shift from Internal Combustion Engine Vehicles (ICEVs) to Electric Vehicles (EVs) is a cornerstone of global efforts to combat climate change and reduce greenhouse gas emissions \cite{Saldarini2024}. However, the widespread adoption of EVs presents a significant challenge to existing electricity grids. Uncontrolled charging can elevate local peak loads, particularly in residential and urban zones, leading to distribution transformer stress, voltage instability, and accelerated degradation of grid assets \cite{Aires2025,Rahman2023}.
+
+Currently, public lighting (IP) represents a significant share of municipal energy consumption often accounting for anywhere from 5\% to over 60\% of a municipal administration's electric bill \cite{Rossi2016}. The accelerated transition to LED technology has demonstrated disruptive potential in releasing load capacity from the low-voltage electrical distribution network. This presents a unique synergy opportunity: the ``power liberated'' by IP efficiency improvements can act as a catalyst for EV infrastructure expansion.
+
+Simultaneously, the expansion of electric mobility faces a critical challenge: grid capacity. The installation of EV charging points requires power availability that, in many urban areas, already approaches the operational limits of distribution transformer substations (PTDs). By allocating the capacity newly available from public lighting modernization to EV charging, municipalities can accommodate growing electric mobility demand while avoiding massive capital investments in new PTD installations \cite{Gouveia2015}.
+
+This work addresses a challenge posed by e-REDES (Portuguese Distribution System Operator), aiming to quantify the remaining capacity resulting from public lighting infrastructure modernization and its allocation potential for EV charging within the context of Portuguese smart grid initiatives. 
+
+\section{Objectives}
+
+The primary objective of this study is to develop a model that quantifies the remaining capacity resulting from public lighting infrastructure modernization. Additionally, the following specific objectives were defined:
+
+\begin{itemize}
+\item Process and consolidate real infrastructure data from e-REDES (public lighting and PTDs).
+
+\item Quantify installed inefficient power and actual network slack.
+
+\item Assess the technical viability of allocating this capacity to electric mobility through integration simulators for 22 kW chargers without compromising grid stability.
+
+\item Apply statistical inference techniques and predictive models to identify municipalities with highest viability potential.
+
+\item Validate findings through comprehensive statistical hypothesis testing and regression analysis.
+\end{itemize}
+
+\section{Methodology}
+
+The methodology was implemented entirely in Python and divided into four essential phases, applying a significance level of $\alpha = 5\%$ in all statistical tests:
+
+\subsection{Data Processing and Feature Engineering}
+
+Data from 308 Portuguese municipalities were consolidated through ETL (Extract, Transform, Load) operations. The following key calculations were performed:
+
+\begin{align}
+\Delta P_{LED} &= P\_IP\_Inef \times 0.65 \label{eq:led_gain}\\
+P_{Folga} &= (Cap_{PTD} \times 0.92) \times (1 - Util_{Media}) \label{eq:slack}\\
+P_{VE} &= N\_PTDs \times 22 \times 0.60 \label{eq:ve_demand}\\
+D &= P_{Folga} + \Delta P_{LED} - P_{VE} \label{eq:delta}
+\end{align}
+
+where $P\_IP\_Inef$ is inefficient power (Sodium and Mercury lamps) in kW, $Cap_{PTD}$ is total PTD capacity in kVA, $Util_{Media}$ is average PTD utilization (0 to 1), and $N\_PTDs$ is the number of PTDs per municipality.
+
+\subsubsection{Justification of Methodology Constants}
+
+Three key constants were adopted based on technical standards, e-REDES operational practices, and European charging infrastructure guidelines \cite{Gouveia2015}.
+
+\subsubsection{LED Efficiency Factor (0.65)}
+
+The coefficient 0.65 represents the typical power reduction achieved when replacing Sodium vapor lamps (the dominant inefficient technology) with equivalent LED luminaires. Sodium lamps operate at approximately 150 W per unit with 120 lm/W efficacy, while modern LED replacements provide equivalent illumination (100--120 lm/W) at 60--80 W. This 50--60\% reduction in luminaire power, combined with the elimination of ballast losses and auxiliary equipment, yields an average factor of 0.65 (i.e., LED installation liberates 65\% of the Sodium lamp's power consumption). This value aligns with Portuguese public lighting audits and international standards in LED retrofit assessments (EN 13201 and CIE guidelines) \cite{Rossi2016}.
+
+\subsubsection{PTD Safety Margin (0.92)}
+
+Distribution transformer substations operate with a nominal capacity that cannot be fully utilized without risking thermal stress and service interruptions. e-REDES operational guidelines specify that PTD loading should not exceed 92\% of rated capacity under peak conditions to: (i) maintain thermal resilience during unexpected demand surges, (ii) preserve transformer lifespan (operating at >92\% reduces effective equipment life by 30--50\%), and (iii) ensure compliance with grid stability standards. Thus, the available operational capacity is $0.92 \times Cap_{PTD}$, and the true slack is the difference between this operational limit and current utilization.
+
+\subsubsection{Standard EV Charger Power (22 kW)}
+
+Aligned with EU Directive 2014/94/EU \cite{Grid2020}, the 22 kW AC rating is the established baseline for Portuguese urban charging. This study adopts a conservative simultaneity factor ($f = 0.60$) to mitigate the significant grid impact of unmanaged charging, which can increase peak loads by up to 45% \cite{Barradas2025}. While rapid chargers (50 kW+) require dedicated high-capacity planning \cite{Gouveia2015}, the 22 kW standard is compatible with existing municipal 3-phase infrastructure and provides practical charging times (6--8 hours for 50 kWh). This approach ensures grid stability, preventing thermal stress and harmonic distortions on PTDs by managing individual sessions that would otherwise consume a substantial share of transformer capacity \cite{Rahman2023}.
+
+\subsection{Exploratory Data Analysis}
+
+Descriptive statistics were computed, and visualizations (bar charts, box plots) were generated to analyze technological mix distribution and identify outliers in network occupancy levels.
+
+\subsection{Statistical Inference Tests}
+
+To ensure robustness of the comparative analysis between different municipal profiles, parametric hypothesis testing was employed. Before conducting these tests, the Shapiro-Wilk test was applied to verify the normality of the occupancy data distribution, a fundamental prerequisite for parametric validity \cite{Xie2015}.
+
+Four types of hypothesis tests were conducted:
+
+\subsubsection{Normality Testing (Shapiro-Wilk)}
+Applied to assess whether occupancy data follows a normal distribution, necessary for parametric test validity \cite{Xie2015}.
+
+\subsubsection{One-Sample Unilateral t-Test}
+Tested $H_0: \mu \geq 0.60$ versus $H_1: \mu < 0.60$ to determine if average PTD occupancy is significantly below 60\%, indicating expansion margin.
+
+\subsubsection{Two-Sample t-Test (Welch)}
+Compared occupancy levels between modernized municipalities (low inefficiency rate) and inefficient municipalities (high inefficiency rate) using samples of $n=30$ each.
+
+\subsubsection{One-Way ANOVA with Post-Hoc Tukey Test}
+To examine variance and differences in occupancy across multiple geographical profiles (North/Central Coast, Lisbon, and Alentejo/South), we conducted a One-Way Analysis of Variance (ANOVA) \cite{Kodali2024}. ANOVA tests whether at least one group mean differs; when significant differences emerge, post-hoc Tukey's Honest Significant Difference (HSD) test identifies which specific regional profiles exhibit statistically significant variations in energy load \cite{Kodali2024}.
+
+\subsubsection{Pearson Correlation}
+Assessed linear relationship between PTD capacity ($Cap_{PTD}$) and total public lighting power ($P\_IP\_Total$).
+
+\subsection{Multiple Linear Regression Model}
+
+To predict PTD utilization from infrastructure metrics and inefficiency rates, we estimated an Ordinary Least Squares (OLS) multiple linear regression model. Because regression validity depends fundamentally on verifying residual assumptions \cite{Cohen2013}, comprehensive diagnostic testing was prioritized. The model specification follows:
+
+\begin{equation}
+\begin{aligned}
+Util\_Media ={}& \beta_0 + \beta_1 P\_IP\_Total \\
+& + \beta_2 Cap\_PTD \\
+& + \beta_3 inefficiency\_rate + \varepsilon
+\end{aligned}
+\end{equation}
+
+Model validation included verification of residual assumptions:
+\begin{itemize}
+\item Normality (Shapiro-Wilk test)
+\item Independence (Durbin-Watson statistic)
+\item Homoscedasticity (Breusch-Pagan test)
+\item Multicollinearity assessment (Variance Inflation Factor - VIF)
+\end{itemize}
+
+\section{Results}
+
+\subsection{Exploratory Data Analysis}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\columnwidth]{../../data/processed/mix_tecnologico.png}
+\caption{Technological mix and top 15 inefficient municipalities. \textit{Left:} National split between inefficient (42.3\%) and efficient (57.7\%) lighting power. \textit{Right:} Top 15 municipalities by inefficient power (led by Cascais, Sintra, and Oeiras).}
+\label{fig:mix_tecnologico}
+\end{figure}
+
+The processed dataset encompasses 308 Portuguese municipalities with 1,823,547 public lighting records and 59,673 distribution transformer records. Technological mix analysis revealed that 42.3\% of installed IP power is inefficient (Sodium and Mercury), corresponding to 180,456 kW of total inefficient power. The LED transition would liberate approximately 117.3 MW of capacity nationally (calculated as 180,456 kW $\times$ 0.65 efficiency gain factor). As shown in Fig.~\ref{fig:mix_tecnologico}, the technological mix visualization and top 15 municipalities distribution illustrate this concentration.
+
+Table~\ref{tab:top15_inefficient} identifies the top 15 municipalities with highest inefficient power, which concentrate 28.7\% of national inefficient power at 51.9 MW (180.5 MW total). Cascais leads with 3,495 kW inefficient power (77.4\% of local IP), followed by Sintra (2,765 kW) and Oeiras (2,758 kW). This concentration demonstrates geographic clustering in the Lisbon metropolitan area.
+
+National statistics, aggregated in Table~\ref{tab:district_summary} and supporting analyses, show: total PTD capacity of 59.3 GVA across all districts, with average utilization of 51.4\%, total LED gain of 130.2 MW, total network slack of 24.3 GVA, and 305 of 308 municipalities (99.0\%) viable for 22 kW charger integration. Hourly analysis reveals consumption reduction peaks at 20:00 (1,520 kW reduction) and reaches minimum at 04:00 (1,089 kW reduction), enabling optimization of charging scheduling.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\columnwidth]{../../data/processed/boxplot_distritos.png}
+\caption{Distribution of PTD utilization by district. Box plots for Aveiro, Lisbon, Porto, and Setúbal show geographic heterogeneity; Lisbon has the lowest median occupancy (42\%), and Setúbal the highest variability ($\sigma = 0.248$). The dashed line marks the 60\% operational threshold.}
+\label{fig:boxplot_distritos}
+\end{figure}
+
+As shown in Fig.~\ref{fig:boxplot_distritos}, box plots analyzing PTD utilization across four reference districts (Aveiro, Lisbon, Porto, and Setúbal) reveal distinct distributions, with highest variability in Setúbal district (standard deviation = 0.248). Lisbon district presents a median occupancy of 0.42 (42\%), while Porto shows 0.58 (58\%).
+
+Missing or indeterminate values in PTD utilization level represent 18.5\% (11,037 records), slightly compromising analysis accuracy. As illustrated in Fig.~\ref{fig:outliers_utilizacao}, outlier identification via IQR method revealed 2,847 PTDs (4.8\%) with occupancy exceeding the upper quartile limit, indicating operational overload cases.
+
+Descriptive statistics for selected municipalities reveal variability in PTD occupancy characteristics. Four representative municipalities from distinct geographic regions were analyzed: Coimbra (Central), Évora (Alentejo), Braga (North), and Faro (South/Algarve). Table~\ref{tab:descriptive_stats} presents comprehensive descriptive measures including distributional properties (skewness and kurtosis), which indicate departure from normality and presence of heavy tails or bimodality.
+
+\begin{table}[htbp]
+\centering
+\caption{Descriptive Statistics of PTD Utilization Levels (4 Decimal Places)}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrrrrr}
+\toprule
+\textbf{Municipality} & \textbf{Mean} & \textbf{Q1 (25\%)} & \textbf{Q2 (50\%)} & \textbf{Q3 (75\%)} & \textbf{Std. Dev.} & \textbf{Skewness} & \textbf{Kurtosis} \\
+\midrule
+Coimbra & 0.5591 & 0.3900 & 0.5900 & 0.7900 & 0.2426 & 0.1881 & -0.8563 \\
+Évora & 0.4699 & 0.1900 & 0.3900 & 0.5900 & 0.2494 & 0.5794 & -0.6509 \\
+Braga & 0.5043 & 0.3900 & 0.5900 & 0.7900 & 0.2483 & 0.2583 & -0.9027 \\
+Faro & 0.5130 & 0.3900 & 0.3900 & 0.5900 & 0.2313 & 0.3696 & -0.6537 \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:descriptive_stats}
+\end{table}
+
+Analysis of these metrics reveals important distributional characteristics. Coimbra exhibits the highest mean occupancy (0.5591) with negative skewness (0.1881), suggesting a slight left-skewed distribution with moderate negative kurtosis (-0.8563), indicating a flatter distribution than normal. Évora shows the lowest mean (0.4699) with the most pronounced positive skewness (0.5794), indicating a right tail with more extreme high values. Braga demonstrates stable occupancy near 50\% with minimal skewness, while Faro presents moderate occupancy with balanced distribution characteristics. These variations reflect regional heterogeneity in grid load patterns and infrastructure deployment.
+
+\subsection{District-Level Summary}
+
+Table~\ref{tab:district_summary} presents aggregated district-level results by district, revealing significant geographic variation. District 11 (Lisbon) leads in absolute LED gain (8,856 MW) and network capacity (2,301 GVA) with 99.1\% of municipalities viable for EV integration. District 13 (Porto) shows comparable metrics with 6,588 MW LED gain and 1,964 GVA slack. Districts 1 (Aveiro) and 15 (Setúbal) present balanced profiles with 1,653 MW and 3,787 MW LED gains respectively. Average PTD utilization varies from 40.8\% (District 12) to 55.9\% (District 6), indicating regional load heterogeneity.
+
+\begin{table}[htbp]
+\centering
+\caption{District-Level Summary Statistics (Selected Districts)}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccccr}
+\toprule
+\textbf{District} & \textbf{Municipalities} & \textbf{LED Gain} & \textbf{Network} & \textbf{Avg.} & \textbf{Viability} \\
+& & \textbf{(MW)} & \textbf{Slack (GVA)} & \textbf{Util.} & \textbf{Rate} \\
+\midrule
+1 -- Aveiro & 19 & 1,653.5 & 635.5 & 50.9\% & 100.0\% \\
+3 -- Braga & 14 & 4,179.5 & 615.0 & 55.8\% & 100.0\% \\
+11 -- Lisbon & 16 & 8,855.7 & 2,301.9 & 53.3\% & 99.1\% \\
+13 -- Porto & 18 & 6,587.6 & 1,964.0 & 54.0\% & 99.8\% \\
+15 -- Setúbal & 13 & 3,787.0 & 659.0 & 52.2\% & 99.2\% \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:district_summary}
+\end{table}
+
+\subsection{Top 15 Municipalities with Inefficient Power}
+
+Priority intervention targeting municipalities with largest inefficient power concentrations can maximize impact. Table~\ref{tab:top15_inefficient} identifies the top 15 municipalities, which cumulatively represent 28.7\% of national inefficient power (51.9 MW of 180.5 MW total).
+
+\begin{table}[htbp]
+\centering
+\caption{Top 15 Municipalities by Inefficient Power (Sodium/Mercury Lamps)}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{cllrr}
+\toprule
+\textbf{Rank} & \textbf{Municipality} & \textbf{District} & \textbf{Inefficient} & \textbf{\% of} \\
+& & & \textbf{Power (kW)} & \textbf{Local IP} \\
+\midrule
+1 & Cascais & Lisbon & 3,494.9 & 77.4\% \\
+2 & Sintra & Lisbon & 2,765.0 & 51.6\% \\
+3 & Oeiras & Lisbon & 2,757.6 & 80.2\% \\
+4 & Matosinhos & Porto & 2,509.8 & 84.7\% \\
+5 & Almada & Setúbal & 2,464.6 & 88.1\% \\
+6 & Covilhã & Castelo Branco & 1,807.9 & 87.0\% \\
+7 & Coimbra & Coimbra & 1,714.8 & 61.7\% \\
+8 & Maia & Porto & 1,530.4 & 64.4\% \\
+9 & Loulé & Faro & 1,518.1 & 56.9\% \\
+10 & Póvoa de Varzim & Porto & 1,513.9 & 95.8\% \\
+11 & Loures & Lisbon & 1,406.5 & 51.3\% \\
+12 & Montijo & Setúbal & 1,398.4 & 95.8\% \\
+13 & Braga & Braga & 1,320.3 & 52.8\% \\
+14 & Viana do Castelo & Viana do Castelo & 1,188.2 & 59.0\% \\
+15 & Leiria & Leiria & 1,132.7 & 48.5\% \\
+\bottomrule
+\end{tabular}
+}
+\vspace{1mm}
+\footnotesize{Lisbon metro area dominates: 4 of top 15. Porto metro: 3 of top 15. Combined 51.9 MW represents 28.7\% of national inefficient power.}
+\label{tab:top15_inefficient}
+\end{table}
+
+As detailed in Table~\ref{tab:top15_inefficient}, the top 15 municipalities are concentrated in the Lisbon metropolitan area (5 municipalities: Cascais, Sintra, Oeiras, Loures) and Porto metropolitan area (3 municipalities: Matosinhos, Maia, Póvoa de Varzim), where rapid EV infrastructure expansion is most critical. Targeting LED retrofit in these 15 municipalities alone would liberate 51.9 MW, equivalent to approximately 2,350 simultaneous 22 kW chargers.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\columnwidth]{../../data/processed/outliers_utilizacao.png}
+\caption{Outlier detection and distribution of PTD utilization. \textit{Left:} Box plot with 2,847 outliers (4.8\% of PTDs) above the upper IQR limit ($q_3 + 1.5 \times IQR$). \textit{Right:} Right-skewed utilization histogram with IQR boundaries; most PTDs cluster around 0.4--0.6.}
+\label{fig:outliers_utilizacao}
+\end{figure}
+
+\subsection{EV Deployment Scenarios}
+
+\subsubsection{Shapiro-Wilk Normality Test}
+Hypotheses were defined as:
+\begin{itemize}
+\item $H_0$: the occupancy sample is drawn from a normal distribution.
+\end{itemize}
+Applied to a sample of 50 municipalities, the test yielded $W = 0.982$ with $p = 0.531$. \textbf{Conclusion on $H_0$: Do not reject $H_0$} ($p > 0.05$), so normality is a reasonable assumption for subsequent parametric inference.
+
+\subsubsection{One-Sample Unilateral t-Test}
+The unilateral test was formulated as:
+\begin{itemize}
+\item $H_0$: $\mu \geq 0.60$ (mean occupancy is at or above 60\%).
+\end{itemize}
+Using a sample of $n=50$ municipalities:
+\begin{itemize}
+\item Test statistic: $t = -1.847$
+\item p-value (unilateral): $p = 0.036$
+\item \textbf{Conclusion on $H_0$: Reject $H_0$} ($p = 0.036 < 0.05$). Statistical evidence supports that average PTD occupancy is significantly below 60\%, indicating margin for load expansion.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\columnwidth]{../../data/processed/4.4_441_histograma_unilateral.png}
+\caption{Section 4.4.1 -- PTD occupancy distribution for the unilateral one-sample test, showing central concentration at intermediate values with moderate dispersion.}
+\label{fig:44_hist_unilateral}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{Two-Sample Welch t-Test}
+Comparison between modernized municipalities ($inefficiency\_rate < \text{median}$) and inefficient municipalities ($inefficiency\_rate \geq \text{median}$):
+\begin{itemize}
+\item $H_0$: $\mu_{\text{modernized}} = \mu_{\text{inefficient}}$.
+\end{itemize}
+\begin{itemize}
+\item Modernized sample: $n = 30$, $\bar{x} = 0.531$, $s = 0.158$
+\item Inefficient sample: $n = 30$, $\bar{x} = 0.603$, $s = 0.176$
+\item Levene's test: $p = 0.412$ (equal variances assumed)
+\item Test statistic: $t = -1.654$, $p = 0.104$
+\item \textbf{Conclusion on $H_0$: Do not reject $H_0$} ($p = 0.104 > 0.05$). No statistically significant difference in occupancy exists between groups, although inefficient municipalities tend to show 6\% higher occupancy.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\columnwidth]{../../data/processed/4.4_442_boxplot_grupos.png}
+\caption{Section 4.4.2 -- Boxplot comparison of modernized and inefficient municipalities; overlapping interquartile ranges are consistent with the non-significant Welch test.}
+\label{fig:44_boxplot_grupos}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{One-Way ANOVA}
+Occupancy analysis by geographical profile:
+\begin{itemize}
+\item $H_0$: $\mu_{\text{North/Central}} = \mu_{\text{Lisbon}} = \mu_{\text{Alentejo/South}}$.
+\end{itemize}
+\begin{itemize}
+\item North/Central Coast ($n = 25$): $\bar{x} = 0.519$, $s = 0.142$
+\item Lisbon ($n = 25$): $\bar{x} = 0.421$, $s = 0.168$
+\item Alentejo/South ($n = 25$): $\bar{x} = 0.548$, $s = 0.195$
+\item Test statistic: $F = 4.732$, $p = 0.012$
+\item \textbf{Conclusion on $H_0$: Reject $H_0$} ($p = 0.012 < 0.05$). Significant differences exist between groups. Post-hoc Tukey analysis revealed Lisbon shows significantly lower occupancy than Alentejo/South ($p = 0.008$).
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\columnwidth]{../../data/processed/4.4_443_anova_boxplot.png}
+\caption{Section 4.4.3 -- ANOVA profile comparison via boxplot, showing different central tendencies across geographic groups.}
+\label{fig:44_anova_boxplot}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{Pearson Correlation}
+Relationship between PTD capacity and total IP power:
+\begin{itemize}
+\item $H_0$: $\rho = 0$ (no linear association between $Cap_{PTD}$ and $P\_IP\_Total$).
+\end{itemize}
+\begin{itemize}
+\item Correlation coefficient: $r = 0.913$
+\item p-value: $p < 0.001$
+\item \textbf{Conclusion on $H_0$: Reject $H_0$} ($p < 0.001$). A strong positive linear correlation exists; municipalities with higher IP power tend to have higher PTD capacity.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\columnwidth]{../../data/processed/4.4_pearson_cap_ptd_vs_ip.png}
+\caption{Section 4.4.4 -- Pearson scatter plot between total IP power and PTD capacity, with trend line indicating strong linear association.}
+\label{fig:44_pearson_scatter}
+\end{figure}
+\FloatBarrier
+
+\begin{table}[htbp]
+\centering
+\caption{Section 4.4 Hypothesis Testing Summary}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccc}
+\toprule
+\textbf{Test} & \textbf{Statistic} & \textbf{p-value} & \textbf{Decision ($\alpha=0.05$)} \\
+\midrule
+Shapiro-Wilk (normality) & $W = 0.982$ & 0.531 & Fail to reject normality \\
+One-sample unilateral t-test & $t = -1.847$ & 0.036 & Reject $H_0$ \\
+Two-sample Welch t-test & $t = -1.654$ & 0.104 & Fail to reject $H_0$ \\
+One-way ANOVA & $F = 4.732$ & 0.012 & Reject $H_0$ \\
+Pearson correlation & $r = 0.913$ & $< 0.001$ & Reject $H_0$ \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:44_summary_tests}
+\end{table}
+\FloatBarrier
+
+\subsection{Multiple Linear Regression Analysis}
+
+\subsubsection{Model Specification and Estimation}
+Regression model estimated on 67 municipalities from four districts (Aveiro, Porto, Lisbon, Braga) with the following specification:
+\begin{equation}
+\begin{aligned}
+Util\_Media ={}& \beta_0 + \beta_1 P\_IP\_Total \\
+& + \beta_2 Cap\_PTD \\
+& + \beta_3 inefficiency\_rate + \varepsilon
+\end{aligned}
+\end{equation}
+
+As shown in Table~\ref{tab:regression_model}, model estimation results reveal the following coefficient estimates. The intercept is highly significant ($\hat{\beta}_0 = 0.544$, $p < 0.001$), representing baseline PTD occupancy. The coefficient for public lighting power ($\hat{\beta}_1 = 1.80 \times 10^{-5}$) is non-significant ($p = 0.165$), suggesting direct IP power size does not strongly predict occupancy levels. Transformer capacity ($\hat{\beta}_2 = -1.99 \times 10^{-7}$, $p = 0.004$) is statistically significant, indicating negative association with occupancy. The inefficiency rate coefficient ($\hat{\beta}_3 = 0.0078$, $p = 0.796$) is non-significant, suggesting that the three-variable model shows limited predictive power for inefficiency rate at the municipal scale.
+
+The model explains 23.8\% of occupancy variability (adjusted $R^2 = 0.238$), suggesting that while modernization and infrastructure characteristics provide some explanatory value, substantial other factors influence PTD utilization (e.g., industrial demand, population density, diurnal/seasonal variations).
+
+\begin{table}[htbp]
+\centering
+\caption{Multiple Linear Regression Model Results (n=67 municipalities)}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Variable} & \textbf{Coefficient} & \textbf{Std. Error} & \textbf{t-stat} & \textbf{p-value} \\
+\midrule
+Intercept & $0.5441$ & $0.0094$ & $57.667$ & $< 0.001^{\dagger\dagger}$ \\
+IP Total Power (kW) & $1.80 \times 10^{-5}$ & $1.28 \times 10^{-5}$ & $1.404$ & 0.165 \\
+PTD Capacity (kVA) & $-1.99 \times 10^{-7}$ & $6.62 \times 10^{-8}$ & $-3.007$ & $0.004^{*}$ \\
+Inefficiency Rate & $0.0078$ & $0.0300$ & $0.260$ & 0.796 \\
+\midrule
+\multicolumn{5}{l}{\textit{Model:} $R^2 = 0.273$, Adj. $R^2 = 0.238$, F = 7.87 ($p < 0.001$)} \\
+\bottomrule
+\end{tabular}
+}
+\vspace{1mm}
+\footnotesize{Significance: $^{*}p < 0.05$; $^{\dagger\dagger}p < 0.001$. VIF values: IP Total Power = 8.51, PTD Capacity = 7.57, Inefficiency Rate = 1.45.}
+\label{tab:regression_model}
+\end{table}
+
+\textbf{Interpretation:} The regression coefficients reveal complex relationships at the municipal scale. The small positive insignificant coefficient for inefficiency rate (0.0078, $p = 0.796$) suggests that the three-variable model has limited explanatory power for inefficiency's direct impact on PTD occupancy at the cross-sectional municipal level. The negative significant coefficient for PTD capacity ($-1.99 \times 10^{-7}$, $p = 0.004$) indicates that after controlling for IP power and inefficiency rates, higher-capacity transformers are associated with slightly lower occupancy, possibly reflecting that municipalities with planned expansion infrastructure exhibit lower current utilization rates.
+
+\textbf{Model Limitations:} The adjusted $R^2 = 0.238$ indicates that approximately 76\% of PTD occupancy variance remains unexplained by these three predictors. This suggests that unmeasured factors---such as industrial consumption patterns, residential density, temporal demand fluctuations, and seasonal variation---are substantial drivers of occupancy levels. While the overall model is statistically significant ($F = 7.87$, $p < 0.001$), the individual coefficients exhibit high multicollinearity (VIF for IP Total Power = 8.51, VIF for PTD Capacity = 7.57), reflecting the strong correlation between infrastructure dimensions. The non-significance of the inefficiency rate coefficient should not be interpreted as evidence that IP modernization lacks impact; rather, occupancy-level relationships appear temporally and spatially heterogeneous at municipal aggregation, warranting future study with finer temporal resolution and dynamic load modeling.
+
+\subsubsection{Residual Diagnostics}
+Comprehensive diagnostic testing validated residual assumptions \cite{Cohen2013}:
+\begin{itemize}
+\item \textbf{Normality of Residuals:} Shapiro-Wilk test yielded $p = 0.403 > 0.05$, confirming normal error distribution \cite{Xie2015}.
+\item \textbf{Independence:} Durbin-Watson statistic $DW = 2.016$ (close to 2), indicating no autocorrelation in residuals \cite{Cohen2013}.
+\item \textbf{Homoscedasticity:} Breusch-Pagan test produced $p = 0.861 > 0.05$, confirming constant error variance. Heteroscedasticity in energy grid models produces biased standard errors and unreliable predictor significance; this test confirms the assumption is satisfied \cite{Astivia2019}.
+\item \textbf{Multicollinearity:} VIF assessment reveals multicollinearity in infrastructure predictors: VIF for $Cap_{PTD}$ = 7.57, VIF for $P\_IP\_Total$ = 8.51 (both exceed the 5 threshold), while VIF for $inefficiency\_rate$ = 1.45 remains acceptable. This multicollinearity reflects the strong correlation ($r = 0.913$) between PTD capacity and public lighting power, as municipalities with larger infrastructure typically have both higher PTD capacity and greater IP installations. High VIF values reduce coefficient precision and inflate confidence intervals around individual coefficients; while the predictions remain unbiased, the interpretation of individual predictor effects becomes unreliable. The model's adequate predictive performance (MAE = 4.99\% on Aveiro municipalities) confirms usability for occupancy forecasting, though results should be interpreted as aggregated effects rather than causal relationships for individual predictors \cite{Cohen2013}.
+\end{itemize}
+
+\subsubsection{EV Viability Assessment}
+Using the model with 95\% confidence intervals, 23 municipalities were identified with margin for integrating 22 kW chargers while maintaining predicted occupancy below 70\%. Priority candidates are concentrated in Aveiro and Lisbon districts, offering greatest operational safety margins.
+
+\subsubsection{Aveiro District Predictions (Municipalities 101-109)}
+
+Model predictions were systematically validated against observed data for all Aveiro district municipalities (codes 101-109). Table~\ref{tab:aveiro_predictions} presents a detailed comparison of predicted versus observed occupancy values, enabling assessment of model reliability at the municipality level.
+
+\begin{table}[H]
+\centering
+\caption{Predicted vs. Observed PTD Occupancy: Aveiro District Municipalities}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Municipality} & \textbf{Observed} & \textbf{Predicted} & \textbf{Absolute} & \textbf{Viable} \\
+\textbf{Name} & \textbf{Occupancy} & \textbf{Occupancy} & \textbf{Error} & \textbf{(D > 0)} \\
+\midrule
+Águeda & 0.4776 & 0.5416 & 0.0640 & Yes \\
+Albergaria-a-Velha & 0.4699 & 0.5419 & 0.0719 & Yes \\
+Anadia & 0.5430 & 0.5458 & 0.0027 & Yes \\
+Arouca & 0.5274 & 0.5479 & 0.0205 & Yes \\
+Aveiro & 0.4755 & 0.5249 & 0.0494 & Yes \\
+Castelo de Paiva & 0.5432 & 0.5488 & 0.0056 & Yes \\
+Espinho & 0.4434 & 0.5396 & 0.0962 & Yes \\
+Estarreja & 0.5076 & 0.5428 & 0.0352 & Yes \\
+Santa Maria da Feira & 0.5829 & 0.5393 & 0.0436 & Yes \\
+\midrule
+\multicolumn{5}{l}{\textit{Mean Absolute Error (MAE) = 0.0499 (4.99 percentage points)}} \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:aveiro_predictions}
+\end{table}
+
+Model performance on Aveiro municipalities demonstrates substantial predictive accuracy, with a mean absolute error (MAE) of 4.99 percentage points and predictions consistently within ±9.62 percentage points of observed values. Notably, all nine municipalities exhibit positive viability margins (D > 0), confirming that LED-driven capacity liberation enables 22 kW charger integration across the district without grid reinforcement. The most accurate predictions arise for Anadia, Castelo de Paiva, and Arouca, where estimated occupancy closely aligns with observed values (errors < 2.1\%). Conversely, Espinho exhibits the largest prediction error (9.62\%), likely reflecting local industrial demand patterns not captured by the three model predictors. Nevertheless, this validation confirms that the regression model delivers reliable occupancy estimation at the municipality scale, supporting practical EV charging infrastructure deployment planning.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\columnwidth]{../../data/processed/4.5_previsao_aveiro_101_109.png}
+\caption{Observed versus predicted PTD occupancy for Aveiro municipalities (codes 101--109), comparing measured values with model estimates.}
+\label{fig:aveiro_real_vs_previsto}
+\end{figure}
+
+\section{Discussion}
+
+The consolidated analysis highlights complex relationships between modernization, network capacity, and electric mobility integration viability. Principal findings are summarized in Table~\ref{tab:district_summary}, Table~\ref{tab:regression_model}, and Figures~\ref{fig:mix_tecnologico}--\ref{fig:44_pearson_scatter}, supporting the following insights:
+
+\paragraph{IP Efficiency and Capacity Liberation}
+The transition to LED in 42.3\% of inefficient power liberates approximately 117.3 MW of capacity (LED gain with a 0.65 factor), representing substantial power potentially allocatable to EV chargers, as shown in Table~\ref{tab:district_summary}. District 11 (Lisbon) alone gains 8.9 MW, while District 13 (Porto) gains 6.6 MW. Hourly analysis indicates that consumption reduction ranges from 1,089 kW (04:00) to 1,520 kW (20:00), enabling temporal coordination with EV charging peaks.
+
+\paragraph{Geographic Heterogeneity and Policy Implications}
+District-level analysis (Table~\ref{tab:district_summary}) confirms that metropolitan areas such as Lisbon and Porto offer the highest expansion capacity. This is consistent with recent findings that EV infrastructure deployment in Portuguese municipalities is strongly influenced by localized economic, demographic, and urban-density factors \cite{Aires2025}. The top 15 municipalities identified in Table~\ref{tab:top15_inefficient}---including Cascais, Sintra, and Oeiras---concentrate 28.7\% of inefficient power, indicating that targeted modernization campaigns should prioritize these areas. As charger utilization in some metropolitan zones approaches 99\% operational thresholds during peak periods \cite{Aires2025}, prioritizing LED retrofits in these regions can directly reduce reinforcement pressure while supporting EU Directive 2014/94/EU mandates. Scenario analysis further indicates that a substantial share of municipalities remains viable even under intensified deployment, reinforcing the case for phased strategic planning \cite{Gouveia2015}.
+
+\paragraph{Scenario Robustness}
+The baseline 22 kW scenario ($f=0.60$) achieves 99.0\% viability across 305 municipalities. Under heightened simultaneity ($f=0.80$), viability decreases to 87.0\%, yet 268 municipalities remain resilient. These results indicate that, in most municipalities, multiple deployment strategies can be sustained without immediate grid reinforcement.
+
+\paragraph{Temporal Load Optimization and Predictive Forecasting}
+Hourly consumption patterns show that peak LED power reduction (1,520 kW at 20:00) coincides with typical evening EV charging peaks. This natural alignment suggests that intelligent scheduling and smart-grid management can improve utilization without aggressive active demand management \cite{Gouveia2015}. Dynamic load coordination at this temporal scale may deliver operational benefits even before advanced forecasting infrastructure is deployed. Nevertheless, future implementations would benefit from more advanced load prediction methods to maximize resilience and enable adaptive capacity reallocation.
+
+\paragraph{Predictive Model Insights}
+As shown in Table~\ref{tab:regression_model}, the inefficiency-rate coefficient is small and non-significant ($\beta_3 = 0.0078$, $p = 0.796$), indicating no robust linear effect of inefficiency rate on occupancy in this four-district sample after controlling for infrastructure-size variables. By contrast, PTD capacity remains significant ($\beta_2 = -1.99 \times 10^{-7}$, $p = 0.004$), suggesting that higher-capacity systems tend to operate with lower average occupancy margins.
+
+\paragraph{Study Limitations}
+\begin{itemize}
+\item 18.5\% missing values in PTD utilization reduce precision
+\item Model restriction to 4 districts due to data limitations
+\item Seasonal variations and diurnal coincidence factors not considered in base model
+\item Analysis assumes geo-proportionally uniform charger distribution
+\item Small adjusted $R^2$ (0.238) suggests significant unmeasured factors
+\end{itemize}
+
+\section{Conclusions}
+
+This study quantified the impact of public lighting efficiency on grid capacity available for electric mobility and urban decarbonization in Portugal through statistical analysis and predictive modeling. The principal results are summarized as follows:
+
+\begin{enumerate}
+\item \textbf{Capacity Liberation:} District analysis in Table~\ref{tab:district_summary} demonstrates that substituting inefficient technology (Sodium/Mercury) with LED across 180,456 kW of installed inefficient power liberates 117.3 MW of national capacity, representing a major opportunity for EV infrastructure without grid reinforcement.
+
+\item \textbf{Viability Confirmation:} National analysis of 308 municipalities (Table~\ref{tab:district_summary}) shows average PTD occupancy (51.4\%) significantly below operational thresholds, with 305 municipalities (99.0\%) viable for baseline 22 kW charger deployment (single unit, $f=0.60$).
+
+\item \textbf{Geographic Prioritization:} The combination of district-level analysis (Table~\ref{tab:district_summary}) and top-15 municipality identification (Table~\ref{tab:top15_inefficient}) reveals that Districts 11 (Lisbon), 13 (Porto), and 1 (Aveiro) emerge as priority zones, with Lisbon offering 2,301 GVA slack and 99.1\% viability for accelerated EV infrastructure rollout.
+
+\item \textbf{Scenario Flexibility:} Scenario modeling shows that even under intensified deployment (3 chargers per PTD, $f=0.60$), 246 municipalities (79.9\%) remain viable, demonstrating grid resilience post-modernization.
+
+\item \textbf{Temporal Optimization:} Hourly consumption profiles reveal peak LED reduction (1,520 kW at 20:00) aligns with evening EV charging peaks, enabling natural load coordination without active demand management.
+\end{enumerate}
+
+\paragraph{Synergistic Decarbonization:} IP modernization can support sustainable EV expansion by reducing municipal energy consumption and releasing capacity for clean transport. This synergy supports Portugal's commitments under EU Directive 2014/94/EU \cite{Grid2020} and contributes to 2030 decarbonization targets.
+
+\paragraph{Strategic Recommendations}
+Priority actions include: (i) prioritizing modernization in top-15 concentration municipalities identified in Table~\ref{tab:top15_inefficient} (e.g., Cascais, Sintra, Oeiras, Matosinhos), where the estimated LED-related releasable capacity is approximately 33.7 MW (0.65 of 51.9 MW of inefficient power); (ii) implementing hourly-coordinated charging strategies aligned with LED reduction peaks; (iii) adopting scenario-based planning for single-to-triple charger configurations; and (iv) establishing monitoring networks to validate real-world simultaneity factors post-implementation.
+
+\paragraph{Future Work}
+
+Several complementary research directions would strengthen these findings. Immediate priorities include: (i) validation with one year of operational data to capture hourly and seasonal variation; (ii) dynamic simulation of real-world EV charging profiles integrated with PTD load dynamics; (iii) cost-benefit analysis of deployment scenarios; and (iv) empirical field validation after LED modernization to verify theoretical capacity liberation.
+
+Beyond these foundational extensions, broader grid optimization should explore Battery Energy Storage Systems (BESS) and Vehicle-to-Grid (V2G) technologies. BESS can operate as a strategic energy buffer, storing surplus LED-liberated capacity during low-demand periods and discharging during EV charging peaks to alleviate congestion and defer transmission upgrades \cite{Saldarini2024,Martins2024}. V2G technology further enhances grid resilience by enabling EVs to return excess energy to the distribution network, effectively transforming vehicles into distributed resources \cite{Saldarini2024}.
+
+Empirical validation should align with Portuguese smart grid initiatives, particularly the InovGrid project. Leveraging real-world testbeds (e.g., InovCity) and advanced metering infrastructure will enable transition from theoretical capacity allocation to actively managed smart grids \cite{Gouveia2015,Crispim2014}. Such integration with machine learning-based demand forecasting could enable predictive capacity management aligned with European resilience and decarbonization objectives.
+
+\section*{Acknowledgments}
+
+The authors gratefully acknowledge e-REDES for providing the public lighting and distribution transformer infrastructure data essential to this study. This work was developed as part of a data analysis project within the curriculum of Instituto Superior de Engenharia do Porto (ISEP).
+
+\begin{thebibliography}{99}
+
+\bibitem{Saldarini2024} A. Saldarini, ``Strategic Approach for Electric Vehicle Charging Infrastructure for Efficient Mobility,'' Ph.D. dissertation, Politecnico di Milano, Milan, Italy, 2024.
+
+\bibitem{Aires2025} V. A. J. Aires, ``Optimising Energy Analytics: A Dimensional Modelling Approach for Enhanced Decision-Making,'' Master's thesis, Universidade NOVA de Lisboa, Lisbon, Portugal, 2025.
+
+\bibitem{Rahman2023} M. H. Rahman, ``A Data-Driven Cyber-Physical Framework for Real-Time Production Control,'' \textit{American Journal of Scholarly Research and Innovation}, pp. 283--313, Dec. 2023.
+
+\bibitem{Rossi2016} C. Rossi, M. Gaetani, and A. Defina, ``AURORA: an Energy Efficient Public Lighting IoT System for Smart Cities,'' in \textit{Proceedings of GreenMetrics 2016}, Antibes Juan-les-Pins, France, 2016.
+
+\bibitem{Gouveia2015} C. Gouveia, D. Rua, F. J. Soares, C. Moreira, P. G. Matos, and J. A. Peças Lopes, ``Development and implementation of Portuguese smart distribution system,'' \textit{Electric Power Systems Research}, vol. 120, pp. 150--162, 2015.
+
+\bibitem{Grid2020} European Parliament and Council of the European Union, ``Directive 2014/94/EU of the European Parliament and of the Council of 22 October 2014 on the deployment of alternative fuels infrastructure,'' \textit{Official Journal of the European Union}, L 307, pp. 1--20, Oct. 28, 2014. [Online]. Available: https://eur-lex.europa.eu/eli/dir/2014/94/oj
+
+\bibitem{Barradas2025} A. Barradas et al., ``Electric Vehicle Load Forecasting in Rural Areas: A Systematic Review,'' \textit{IEEE Access}, Oct. 2025.
+
+\bibitem{Martins2024} J. C. Martins and M. D. Pinheiro, ``Energy Communities and Electric Mobility as a Win-Win Solution in Built Environment,'' \textit{Energies}, vol. 17, no. 12, p. 3011, 2024.
+
+\bibitem{Crispim2014} J. Crispim, J. Braz, R. Castro, and J. Esteves, ``Smart Grids in the EU with smart regulation: Experiences from the UK, Italy and Portugal,'' \textit{Utilities Policy}, vol. 31, pp. 85--93, 2014.
+
+\bibitem{Xie2015} J. Xie, T. Hong, T. Laing, and C. Kang, ``On Normality Assumption in Residual Simulation for Probabilistic Load Forecasting,'' \textit{IEEE Transactions on Smart Grid}, vol. 6, no. 3, pp. 1046--1053, 2015.
+
+\bibitem{Kodali2024} Y. Kodali and Y. V. P. Kumar, ``ANOVA-Based Variance Analysis in Smart Home Energy Consumption Data Using a Case Study of Darmstadt Smart City, Germany,'' \textit{Engineering Proceedings}, vol. 82, no. 1, p. 31, Nov. 2024.
+
+\bibitem{Cohen2013} P. Cohen, S. G. West, and L. S. Aiken, \textit{Applied Multiple Regression/Correlation Analysis for the Behavioral Sciences}, 3rd ed. New York, NY, USA: Routledge, 2013.
+
+\bibitem{Astivia2019} O. L. O. Astivia and B. D. Zumbo, ``Heteroskedasticity in multiple regression analysis: what it is, how to detect it and how to solve it with applications in R and SPSS,'' \textit{Practical Assessment, Research and Evaluation}, vol. 24, no. 1, 2019.
+
+\end{thebibliography}
+
+\end{document}

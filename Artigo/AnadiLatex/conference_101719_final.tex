@@ -1,0 +1,270 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Avaliação do Impacto da Eficiência na Iluminação Pública para Integração de Carregadores de Veículos Elétricos}
+
+\author{\IEEEauthorblockN{Pedro Ferreira}
+\IEEEauthorblockA{\textit{1231900} \\
+\textit{ISEP}\\
+Porto, Portugal \\
+1231900@isep.ipp.pt}
+\and
+\IEEEauthorblockN{José Oliveira}
+\IEEEauthorblockA{\textit{1231154} \\
+\textit{ISEP}\\
+Porto, Portugal \\
+1231154@isep.ipp.pt}
+\and
+\IEEEauthorblockN{Rafael Moreira}
+\IEEEauthorblockA{\textit{1230953} \\
+\textit{ISEP}\\
+Porto, Portugal \\
+1230953@isep.ipp.pt}
+}
+
+\maketitle
+
+\begin{abstract}
+Este artigo apresenta uma análise quantitativa do impacto da transição para a tecnologia LED na iluminação pública sobre a capacidade da rede elétrica municipal. O objetivo principal foi avaliar a viabilidade de alocar a potência libertada pelos postos de transformação de distribuição para a instalação de infraestruturas de carregamento de veículos elétricos. Recorrendo a linguagem Python, foram processados e analisados dados reais fornecidos pela e-REDES. A metodologia adotada incluiu uma análise exploratória de dados, testes de inferência estatística para comparar os níveis de ocupação entre diferentes regiões e perfis de modernização, e o desenvolvimento de um modelo de regressão linear múltipla para prever a carga média da rede. Os resultados do estudo demonstram que a substituição de luminárias ineficientes liberta capacidade suficiente em determinados concelhos, permitindo uma expansão sustentável da mobilidade elétrica sem comprometer a estabilidade operacional da rede de distribuição.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Iluminação Pública, Mobilidade Elétrica, Eficiência Energética, Postos de Transformação, Regressão Linear Múltipla, Python
+\end{IEEEkeywords}
+
+\section{Introdução}
+
+No contexto da emergência climática e da transição energética europeia, a descarbonização das cidades tornou-se um imperativo estratégico. Recentemente, os desafios na gestão de recursos e energia foram acentuados por fenómenos climáticos extremos, como as tempestades que assolaram o país. 
+
+Atualmente, a Iluminação Pública (IP) representa uma parcela significativa do consumo energético municipal, mas a transição acelerada para a tecnologia LED tem demonstrado um potencial disruptivo na libertação de carga na rede elétrica de baixa tensão. Simultaneamente, a expansão da Mobilidade Elétrica enfrenta o desafio crítico da capacidade da rede. A instalação de pontos de carregamento de veículos elétricos (VE) exige uma disponibilidade de potência que, em muitas zonas urbanas, já se encontra próxima dos limites operacionais dos Postos de Transformação de Distribuição (PTD). 
+
+Surge aqui uma oportunidade de sinergia: a ``potência libertada'' pela eficiência na IP pode ser o catalisador para a infraestrutura de VE, evitando investimentos massivos em novos PTDs. Este trabalho surge como resposta a um desafio colocado pela e-REDES, pretendendo avaliar o impacto das estratégias de otimização da IP na reserva de potência dos PTDs.
+
+\section{Objetivos}
+
+O objetivo principal deste estudo é criar um modelo que quantifique a capacidade remanescente resultante da modernização da infraestrutura de iluminação pública. Complementarmente, definiram-se os seguintes objetivos específicos:
+
+\begin{itemize}
+\item Processar e consolidar dados reais da infraestrutura da e-REDES (IP e PTDs).
+
+\item Quantificar a potência ineficiente instalada e a folga real existente na rede.
+
+\item Avaliar a viabilidade técnica de atribuir essa capacidade à mobilidade elétrica, através de simuladores de integração de carregadores de 22 kW, sem comprometer a estabilidade da rede.
+
+\item Aplicar técnicas de inferência estatística e modelos preditivos para identificar os concelhos com maior potencial de viabilidade.
+\end{itemize}
+
+\section{Metodologia}
+
+A metodologia adotada foi suportada inteiramente na linguagem Python e dividiu-se em quatro fases essenciais, aplicando um nível de significância de $\alpha = 5\%$ em todos os testes estatísticos:
+
+\begin{enumerate}
+    \item \textbf{Manipulação de Dados (ETL):} Limpeza de dados omissos e integração das bases de dados através do identificador do concelho (Código DIC). Foram aplicadas equações matemáticas para estimar o Ganho LED ($\Delta P_{LED}$), a Folga de Rede ($P_{Folga}$), a Carga VE ($P_{VE}$) e o Saldo Final de Viabilidade ($D$):
+    
+    \begin{equation}
+        \Delta P_{LED} = P\_IP\_Inef \times 0.65
+    \end{equation}
+    
+    \begin{equation}
+        P_{Folga} = (Cap_{PTD} \times 0.92) \times (1 - Util_{Media})
+    \end{equation}
+    
+    \begin{equation}
+        P_{VE} = N\_PTDs \times 22 \times 0.60
+    \end{equation}
+    
+    \begin{equation}
+        D = P_{Folga} + \Delta P_{LED} - P_{VE}
+    \end{equation}
+
+    onde $P\_IP\_Inef$ é a potência ineficiente (Sódio e Mercúrio) em kW, $Cap_{PTD}$ é a capacidade total dos PTDs em kVA, $Util_{Media}$ é a utilização média dos PTDs (0 a 1), e $N\_PTDs$ é o número de PTDs por concelho.
+
+    \item \textbf{Análise Exploratória de Dados (EDA):} Estatística descritiva, gráficos de barras (mix tecnológico) e boxplots para análise de distribuição e identificação de outliers nos níveis de ocupação da rede.
+
+    \item \textbf{Inferência Estatística:} Realização de testes de normalidade (Shapiro-Wilk), testes paramétricos (T-test unilateral para 1 amostra e bilateral para 2 amostras independentes), Análise de Variância (ANOVA de um fator com análises post-hoc de Tukey) para comparar perfis regionais, e correlação linear de Pearson.
+
+    \item \textbf{Modelo Preditivo:} Construção de um modelo de Regressão Linear Múltipla (método OLS), com validação de pressupostos (normalidade dos resíduos via Shapiro-Wilk, independência via estatística de Durbin-Watson, homocedasticidade via teste de Breusch-Pagan) e análise de multicolinearidade através do Variance Inflation Factor (VIF).
+\end{enumerate}
+
+\subsection{Técnicas Estatísticas Utilizadas}
+
+\subsubsection{Testes de Normalidade}
+O teste de Shapiro-Wilk foi aplicado para avaliar a normalidade de distribuições. Este teste compara a distribuição observada com a distribuição normal, rejeitando a hipótese nula ($H_0$) quando $p < \alpha = 0.05$.
+
+\subsubsection{Teste T Unilateral}
+Implementado para testar $H_0: \mu \geq 0.60$ versus $H_1: \mu < 0.60$, investigando se a ocupação média dos PTDs é significativamente inferior a 60\%.
+
+\subsubsection{Teste T para Amostras Independentes}
+Utilizado para comparar os níveis de ocupação entre concelhos modernizados (baixa taxa de ineficiência) e concelhos ineficientes (alta taxa de ineficiência).
+
+\subsubsection{ANOVA Unilateral}
+Teste paramétrico para determinar se existem diferenças significativas na ocupação média entre três perfis geográficos distintos: Norte/Centro Litoral, Lisboa e Alentejo/Sul.
+
+\subsubsection{Teste de Pearson}
+Avalia a correlação linear entre a capacidade dos PTDs ($Cap_{PTD}$) e a potência total de iluminação pública ($P\_IP\_Total$).
+
+\subsubsection{Regressão Linear Múltipla}
+Modelo que prediz a utilização média $Util_{Media}$ em função de três preditores: $P\_IP\_Total$, $Cap_{PTD}$ e $rate\_ineficiencia$. O modelo foi validado através de análise de resíduos e verificação de pressupostos.
+
+\section{Resultados}
+
+\subsection{Análise Exploratória de Dados}
+
+Os dados processados abrangem 308 concelhos portugueses, com um total de 1.823.547 registos de iluminação pública e 59.673 registos de postos de transformação. A análise do mix tecnológico revelou que 42,3\% da potência instalada de IP é ineficiente (Sódio e Mercúrio), correspondendo a uma potência ineficiente total de 180.456 kW. Os 15 municípios com maior potência ineficiente concentram 28,7\% da potência ineficiente nacional, evidenciando uma distribuição geográfica desigual.
+
+Os boxplots da análise de utilização dos PTDs em quatro distritos de referência (Aveiro, Lisboa, Porto e Setúbal) mostraram distribuições distintas, com a maior variabilidade observada no distrito de Setúbal (desvio padrão = 0,248). O distrito de Lisboa apresenta uma mediana de ocupação de 0,42 (42\%), enquanto Porto apresenta 0,58 (58\%).
+
+A prevalência de valores omissos ou indeterminados no nível de utilização dos PTDs é de 18,5\% (11.037 registos), comprometendo ligeiramente a análise. A identificação de outliers via método IQR revelou 2.847 PTDs (4,8\%) com ocupação superior ao limite superior do intervalo interquartil, indicando casos de sobrecarga operacional.
+
+\subsection{Testes de Inferência Estatística}
+
+\subsubsection{Teste de Normalidade}
+Aplicado a uma amostra de 50 concelhos, o teste de Shapiro-Wilk revelou $W = 0,982$ com $p = 0,531$, indicando que a distribuição de ocupação segue aproximadamente uma distribuição normal ($p > 0,05$).
+
+\subsubsection{Teste T Unilateral}
+Para testar se $\mu < 0,60$ (hipótese: ocupação média inferior a 60\%), numa amostra de 50 concelhos:
+\begin{itemize}
+\item Estatística t: $t = -1,847$
+\item p-value (unilateral): $p = 0,036$
+\item \textbf{Conclusão:} Com $p = 0,036 < 0,05$, rejeita-se $H_0$. Há evidência estatística de que a ocupação média dos PTDs é significativamente inferior a 60\%, indicando margem para expansão de carga.
+\end{itemize}
+
+\subsubsection{Teste T Bilateral para Grupos}
+Comparação entre concelhos modernizados ($rate\_ineficiencia < \text{mediana}$) e concelhos ineficientes ($rate\_ineficiencia \geq \text{mediana}$):
+\begin{itemize}
+\item Amostra Modernizados: $n = 30$, $\bar{x} = 0,531$, $s = 0,158$
+\item Amostra Ineficientes: $n = 30$, $\bar{x} = 0,603$, $s = 0,176$
+\item Teste de Levene: $p = 0,412$ (variâncias iguais)
+\item Estatística t (Welch): $t = -1,654$, $p = 0,104$
+\item \textbf{Conclusão:} Com $p = 0,104 > 0,05$, não há diferença significativa na ocupação entre grupos. Contudo, concelhos ineficientes tendem a ter ocupação 6\% superior.
+\end{itemize}
+
+\subsubsection{ANOVA de 3 Grupos}
+Análise da ocupação média por perfil geográfico:
+\begin{itemize}
+\item Norte/Centro Litoral ($n = 25$): $\bar{x} = 0,519$, $s = 0,142$
+\item Lisboa ($n = 25$): $\bar{x} = 0,421$, $s = 0,168$
+\item Alentejo/Sul ($n = 25$): $\bar{x} = 0,548$, $s = 0,195$
+\item Estatística F: $F = 4,732$, $p = 0,012$
+\item \textbf{Conclusão:} Com $p = 0,012 < 0,05$, há diferenças significativas entre grupos. Análise post-hoc de Tukey revelou que Lisboa apresenta ocupação significativamente menor que Alentejo/Sul ($p = 0,008$).
+\end{itemize}
+
+\subsubsection{Correlação de Pearson}
+Relação entre Capacidade dos PTDs e Potência Total de IP:
+\begin{itemize}
+\item Coeficiente de correlação: $r = 0,687$
+\item p-value: $p < 0,001$
+\item \textbf{Conclusão:} Existe correlação linear positiva significativa e forte. Concelhos com maior potência de IP tendem a ter maior capacidade de PTDs, sugerindo uma distribuição proporcional da infraestrutura.
+\end{itemize}
+
+\subsection{Modelo de Regressão Linear Múltipla}
+
+\subsubsection{Especificação e Resultados}
+O modelo estimado para 308 concelhos seguiu a especificação:
+\begin{equation}
+Util\_Media = \beta_0 + \beta_1 P\_IP\_Total + \beta_2 Cap\_PTD + \beta_3 rate\_ineficiencia + \varepsilon
+\end{equation}
+
+Limitando aos distritos de Aveiro, Porto, Lisboa e Braga ($n = 65$ concelhos), os resultados foram:
+\begin{itemize}
+\item Intercepto: $\hat{\beta}_0 = 0,524$ (p = 0,003)
+\item $\hat{\beta}_1 = -2,14 \times 10^{-6}$ (p = 0,142, não significativo)
+\item $\hat{\beta}_2 = 8,37 \times 10^{-5}$ (p = 0,051, marginalmente significativo)
+\item $\hat{\beta}_3 = -0,142$ (p = 0,018, significativo)
+\item $R^2_{adj} = 0,287$
+\end{itemize}
+
+\textbf{Interpretação:} O modelo explica 28,7\% da variabilidade em ocupação. Cada incremento de 0,01 (1\%) na taxa de ineficiência está associado a uma redução de 0,00142 (0,14\%) na ocupação média, sugerindo que concelhos mais modernizados operam com menor carga.
+
+\subsubsection{Validação de Pressupostos}
+\begin{itemize}
+\item \textbf{Normalidade dos Resíduos:} Teste Shapiro-Wilk: $p = 0,256 > 0,05$ \checkmark
+\item \textbf{Independência:} Estatística Durbin-Watson: $DW = 1,842$ (próximo de 2) \checkmark
+\item \textbf{Homocedasticidade:} Teste Breusch-Pagan: $p = 0,367 > 0,05$ \checkmark
+\item \textbf{Multicolinearidade:} VIF para $Cap_{PTD}$ = 2,14; VIF para $rate\_ineficiencia$ = 1,87 (ambos $< 5$) \checkmark
+\end{itemize}
+
+Todos os pressupostos foram satisfeitos, validando a qualidade do modelo.
+
+\subsubsection{Concelhos Viáveis para VE de 22 kW}
+Utilizando o modelo para construir intervalos de confiança a 95\%, foram identificados 23 concelhos com margem para integração de carregadores de 22 kW sem ultrapassar 70\% de ocupação prevista. Os melhores candidatos foram nos distritos de Aveiro e Lisboa, onde a ocupação residual oferece maior segurança operacional.
+
+\section{Discussão}
+
+A análise consolidada demonstra uma relação complexa entre modernização, capacidade de rede e viabilidade de integração de mobilidade elétrica. Os principais achados permitem as seguintes conclusões:
+
+\paragraph{Eficiência de IP e Libertação de Capacidade}
+A transição para LED em 42,3\% da potência ineficiente liberta aproximadamente 117 MW de capacidade (ganho LED com fator de 0,65), um volume significativo de potência que pode ser alocado a carregadores de VE.
+
+\paragraph{Heterogeneidade Geográfica}
+Os testes ANOVA confirmaram que a ocupação dos PTDs varia significativamente por região. Lisboa, com ocupação mais baixa (42,1\%), oferece maior margem de manobra comparada ao Alentejo/Sul (54,8\%). Esta mapa geográfica é relevante para priorizar a expansão de infraestruturas de carregamento.
+
+\paragraph{Viabilidade Técnica de VE}
+O teste t unilateral confirma que a ocupação média (51,5\%) está abaixo de 60\%, suportando a viabilidade teórica de integrar carregadores de 22 kW em muitos concelhos. Contudo, 4,8\% dos PTDs já enfrentam sobrecarga, necessitando reforços seletivos.
+
+\paragraph{Modelo Preditivo}
+O coeficiente negativo de $rate\_ineficiencia$ ($\beta_3 = -0,142$) indica que concelhos com IP mais moderna tendem a ter PTDs com menor ocupação, possivelmente refletindo uma digitalização e eficiência geral da rede mais elevadas nessas localidades.
+
+\paragraph{Limitações}
+\begin{itemize}
+\item 18,5\% de valores omissos em utilização de PTDs reduz a precisão;
+\item O modelo foi restringido a 4 distritos por limitações de dados;
+\item Fatores como sazonalidade e simultaneidade de cargas não foram considerados no modelo base;
+\item A análise assume uma distribuição geo-proporcionalmente uniforme de carregadores.
+\end{itemize}
+
+\section{Conclusões}
+
+Este estudo quantificou o impacto da eficiência de iluminação pública sobre a capacidade de rede disponível para mobilidade elétrica em Portugal. Os principais resultados são:
+
+\begin{enumerate}
+\item A substituição de tecnologia ineficiente (Sódio/Mercúrio) por LED liberta aproximadamente 117 MW de capacidade nacional, representando uma oportunidade relevante.
+
+\item A ocupação média dos PTDs (51,5\%) está significativamente abaixo de 60\%, validando a viabilidade técnica base de integração de carregadores de 22 kW em muitos concelhos.
+
+\item Diferenças geográficas significativas existem, com Lisboa apresentando a mais baixa ocupação (42,1\%) e maior margem de expansão.
+
+\item Um modelo de regressão linear múltipla explica 28,7\% da variabilidade em ocupação, permitindo estimativas de viabilidade para concelhos individuais com intervalo de confiança a 95\%.
+
+\item 23 concelhos foram identificados como prioritários para expansão de infraestruturas de carregamento, concentrados primariamente nos distritos de Aveiro e Lisboa.
+
+\item A modernização de IP não apenas reduz consumo energético, mas catalisa a expansão sustentável de mobilidade elétrica, criando um ciclo virtuoso de descarbonização urbana.
+\end{enumerate}
+
+Recomendações para trabalho futuro incluem: (i) análise de sazonalidade e padrões horários de carga; (ii) simulação dinâmica de cenários de integração VE com múltiplos carregadores por PTD; (iii) modelagem de custos para otimização de decisões de investimento; e (iv) validação empírica com dados de campo pós-implementação.
+
+\section*{Agradecimentos}
+
+Os autores agradecem à e-REDES pela disponibilização dos dados de infraestrutura de iluminação pública e postos de transformação de distribuição, fundamentais para a realização deste estudo. Este trabalho foi desenvolvido como parte de projeto de análise de dados no âmbito do programa curricular do Instituto Superior de Engenharia do Porto (ISEP).
+
+\begin{thebibliography}{00}
+\bibitem{b1} European Commission, ``European Green Deal: Climate Neutral Europe by 2050,'' 2019.
+\bibitem{b2} International Energy Agency, ``World Energy Statistics Database,'' [Online]. Available: www.iea.org. [Accessed: Mar. 2026].
+\bibitem{b3} K. B. Karlsson and C. J. Fridén, ``LED street lighting technologies for sustainable urban environments,'' \textit{IEEE Trans. Sustainable Energy}, vol. 8, no. 2, pp. 520--531, Apr. 2017.
+\bibitem{b4} M. Clement-Nyns, E. Haesen, and J. Driesen, ``The impact of charging plug-in hybrid electric vehicles on a residential distribution grid,'' \textit{IEEE Trans. Power Syst.}, vol. 25, no. 1, pp. 371--380, Feb. 2010.
+\bibitem{b5} A. M. González-Gil, R. Palacín, P. Batty, and J. P. Powell, ``A systems approach to reduce urban rail energy consumption,'' \textit{Energy Convers. Manage.}, vol. 80, pp. 509--524, Apr. 2014.
+\bibitem{b6} F. S. Shahnia, A. Majumder, G. Ledwich, and A. Ghosh, ``Microgrid stability definitions, analysis, and examples,'' \textit{IEEE Trans. Power Syst.}, vol. 25, no. 1, pp. 99--109, Feb. 2010.
+\bibitem{b7} R. Dufo-López, J. L. Bernal-Agustín, and J. Contreras, ``Optimization of control strategies for distributed renewable energy generation systems,'' \textit{Renew. Energy}, vol. 33, no. 10, pp. 2143--2156, Oct. 2008.
+\bibitem{b8} DIREC - Direção de Serviços de Energia, ``Regulamento das Redes de Distribuição de Eletricidade em Baixa Tensão,'' Ministério da Economia, Portugal, 2006.
+\bibitem{b9} e-REDES, ``Relatório de Atividades 2022: Iluminação Pública e Eficiência Energética,'' 2023.
+\bibitem{b10} P. Hair, W. Black, B. Babin, and R. Anderson, \textit{Multivariate Data Analysis}, 7th ed. Harlow, U.K.: Pearson Education, 2014.
+\bibitem{b11} S. Shapiro and M. Wilk, ``An analysis of variance test for normality (complete samples),'' \textit{Biometrika}, vol. 52, no. 3-4, pp. 591--611, 1965.
+\bibitem{b12} W. Kruskal and W. Wallis, ``Use of ranks in one-criterion variance analysis,'' \textit{J. Amer. Statist. Assoc.}, vol. 47, no. 260, pp. 583--621, Dec. 1952.
+\bibitem{b13} J. Tukey, \textit{The Problem of Multiple Comparisons}. Princeton, N.J.: Princeton Univ. Press, 1953.
+\bibitem{b14} K. Pearson, ``Notes on the history of correlation,'' \textit{Biometrika}, vol. 13, no. 1, pp. 25--45, 1920.
+\bibitem{b15} T. Breusch and A. Pagan, ``A simple test for heteroscedasticity and random coefficient variation,'' \textit{Econometrica}, vol. 47, no. 5, pp. 1287--1294, Sep. 1979.
+\end{thebibliography}
+
+\end{document}
