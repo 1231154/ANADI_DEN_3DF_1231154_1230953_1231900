@@ -1,0 +1,519 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{placeins}
+\usepackage{float}
+\setlength{\emergencystretch}{1em}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\pagestyle{plain}
+\begin{document}
+
+\title{Machine Learning Applied to Distribution Transformer Capacity: Impact of LED Retrofitting and EV Charging}
+
+\author{\IEEEauthorblockN{Pedro Ferreira}
+\IEEEauthorblockA{\textit{Student ID: 1231900} \\
+\textit{ISEP}\\
+Porto, Portugal \\
+1231900@isep.ipp.pt}
+\and
+\IEEEauthorblockN{José Oliveira}
+\IEEEauthorblockA{\textit{Student ID: 1231154} \\
+\textit{ISEP}\\
+Porto, Portugal \\
+1231154@isep.ipp.pt}
+\and
+\IEEEauthorblockN{Rafael Moreira}
+\IEEEauthorblockA{\textit{Student ID: 1230953} \\
+\textit{ISEP}\\
+Porto, Portugal \\
+1230953@isep.ipp.pt}
+}
+
+\maketitle
+
+\begin{abstract}
+The growing adoption of Electric Vehicles (EVs) places increasing stress on low-voltage distribution networks, while the widespread replacement of public street lighting with LED technology frees up previously allocated grid capacity. This study investigates whether that freed capacity is sufficient to support decentralized EV charging, addressing a challenge posed by the Portuguese Distribution System Operator e-REDES. A data-driven methodology is applied to a dataset of 68,963 distribution transformer substations across Portugal, using Machine Learning to predict the remaining power capacity of each substation (regression) and to classify its overall utilization level (classification). Four algorithms are compared---Decision Trees, Support Vector Machines (SVM), K-Nearest Neighbors (KNN), and Artificial Neural Networks (ANN)---and evaluated through 10-fold cross-validation with statistical significance testing. The Neural Network outperformed all other models in both tasks, achieving a mean absolute error of 31.32~kVA in regression and a weighted F1-score of 0.707 in classification, with statistically significant margins over the second-best model in each case.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Machine Learning, Distribution Transformers, Electric Vehicles, Smart Grid, LED Retrofitting, Predictive Asset Management.
+\end{IEEEkeywords}
+
+\section*{Abbreviations and Notation}
+\label{sec:abbrev}
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{p{0.16\columnwidth}p{0.70\columnwidth}}
+\toprule
+\textbf{Abbrev.} & \textbf{Definition} \\
+\midrule
+ANN  & Artificial Neural Network \\
+CV   & Cross-Validation \\
+DSO  & Distribution System Operator \\
+DT   & Decision Tree \\
+EDA  & Exploratory Data Analysis \\
+EV   & Electric Vehicle \\
+IP   & Public Lighting (\textit{Iluminação Pública}) \\
+LED  & Light Emitting Diode \\
+MAE  & Mean Absolute Error \\
+ML   & Machine Learning \\
+MLP  & Multi-Layer Perceptron \\
+OHE  & One-Hot Encoding \\
+PTD  & Distribution Transformer Substation \\
+RMSE & Root Mean Square Error \\
+SVM  & Support Vector Machine \\
+SVR  & Support Vector Regression \\
+\textit{PFolga} & Remaining power capacity (slack) at a PTD \\
+\midrule
+\textbf{Units:} & \\
+kVA & Kilovolt-ampere \\
+kW  & Kilowatt \\
+MW  & Megawatt \\
+W   & Watt \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Introduction}
+
+The electrification of the transport sector is a critical step towards global decarbonization, but the widespread adoption of Electric Vehicles (EVs) poses significant challenges to existing low-voltage distribution networks \cite{Jain2023,IEA2024}. The high-power and often coincident charging demand of EVs can cause severe stress on distribution transformers, leading to accelerated aging, increased thermal losses, and potential grid instability \cite{Hilshey2011,Brinkel2020}. For Distribution System Operators (DSOs), mitigating these adverse impacts while accommodating new EV loads is a primary asset management concern \cite{Jain2023,Rajora2024}.
+
+Simultaneously, municipalities are modernizing their infrastructure by replacing traditional public street lighting with highly efficient LED technology \cite{ISEP2026}. This transition not only significantly reduces energy consumption but also frees up previously allocated power capacity within the grid \cite{Chowdhury2025}. This creates a strategic opportunity: utilizing the power headroom liberated by LED retrofits to supply decentralized EV charging stations integrated into streetlamps \cite{PennState2025}. This approach offers a cost-effective and scalable solution by repurposing existing electrical infrastructure without requiring extensive grid reinforcements.
+
+Motivated by an analytical challenge proposed by the Portuguese DSO e-REDES, this study investigates the feasibility of this synergy \cite{ISEP2026}. The core operational challenge lies in accurately quantifying the available capacity of Distribution Transformers (PTDs) after the lighting optimization, ensuring that the integration of EV chargers does not compromise the safety and quality of the electrical supply \cite{ISEP2026}.
+
+Machine Learning (ML) techniques have been increasingly applied to smart grid load forecasting and asset management \cite{Rajora2024,ElShahat2024}. Compared to conventional physical models, ML algorithms handle high-dimensional and non-linear data more naturally, uncovering consumption patterns that rule-based approaches miss \cite{ANNBigData2024,Vanting2021,Ding2022}. The literature points to Decision Trees, Support Vector Machines, Neural Networks, and ensemble methods as particularly effective for tabular grid data \cite{ANNBigData2024,SVMModels2024,ANNModels2024,DTXGBModels2024}.
+
+This paper pursues two objectives: predicting the exact power headroom at each PTD (variable \textit{PFolga\_PTD}, regression) and categorizing overall network utilization into three levels (variable \textit{utilizRede}, classification) \cite{ISEP2026}. Model performance is measured via MAE, RMSE, Accuracy and F1-score under 10-fold cross-validation \cite{Altmann2010,Malakouti2023,ISEPMetricsRegression,ISEPMetricsClassification}, and statistical significance tests determine which differences between models are meaningful rather than incidental \cite{Hull1993,RCore2004}.
+
+\section{State of the Art}
+
+\subsection{Machine Learning in Power System Asset Management}
+
+The transition to smart grids has made large volumes of operational data available, enabling a shift from reactive, rule-based maintenance toward data-driven predictive approaches~\cite{Heydt2010,Rana2025}. ML techniques are now widely used to monitor transformer health, anticipate failures, and forecast energy demand~\cite{Rajora2024,SystematicReviewAI2025}. Deep Learning architectures such as Long Short-Term Memory (LSTM) networks and Convolutional Neural Networks (CNN) have shown strong results in capturing temporal and spatial dependencies across short-, medium-, and long-term load forecasting horizons~\cite{Badhon2024,AlSelwi2024,Vanting2021}.
+
+\subsection{EV Charging Impacts and Transformer Capacity}
+
+The rapid integration of Electric Vehicles (EVs) introduces highly variable and potentially coincident charging demands that alter standard residential load profiles~\cite{Calero2020}. Uncoordinated EV charging can severely overload low-voltage distribution transformers, increasing circuit losses and significantly accelerating equipment aging~\cite{Jain2023,Hines2011}. To accurately quantify the remaining power capacity (headroom) and prevent transformer degradation, predictive models must accommodate non-linear and highly volatile demand patterns~\cite{ClementNyns2010}. While traditional statistical models like the Autoregressive Integrated Moving Average (ARIMA) have historically been used for load forecasting, modern ML algorithms consistently outperform them in high-variability scenarios associated with EV penetration, as they can automatically capture non-linear mapping relationships~\cite{DTU2022,ARIMA2023}.
+
+\subsection{Regression Techniques for Load Forecasting}
+
+To forecast exact load values or available power headroom---a regression task---various algorithms have been compared in the literature~\cite{Elkari2023}. While Multiple Linear Regression offers a baseline for understanding the linear relationships between environmental or grid variables and energy demand, more complex algorithms generally yield superior accuracy~\cite{Ciulla2019}. Ensemble methods, such as Random Forest (RF) and Extreme Gradient Boosting (XGBoost), alongside Support Vector Regression (SVR) and Decision Trees, are frequently highlighted for their robustness and lower error rates, measured through metrics like Root Mean Square Error (RMSE) and Mean Absolute Error (MAE)~\cite{Chen2016,ElShahat2024}. Recent studies further demonstrate that deep neural networks and ensemble methods can efficiently process high-dimensional tabular data to optimize energy distribution planning~\cite{Badhon2024}.
+
+\subsection{Classification of Network Utilization}
+
+Beyond predicting exact continuous capacity, classifying overall network utilization into distinct categorical levels (e.g., low, medium, high) provides actionable insights for Distribution System Operators (DSOs) to make rapid operational and load-balancing decisions~\cite{Velasquez2011}. Algorithms such as K-Nearest Neighbors (KNN), Support Vector Machines (SVM), and Logistic Regression are commonly deployed for this task~\cite{MTR2022a}. Comparative studies on energy consumption classification show that non-linear models such as SVM generally outperform simpler baselines like logistic regression, with the relative ranking of KNN and SVM varying depending on dataset characteristics and class distribution~\cite{KNN2023,PrecisionRecall2022}.
+
+\subsection{Model Evaluation and Statistical Validation}
+
+Reliable evaluation of ML models on critical infrastructure requires more than a single train/test split. K-fold cross-validation is the standard approach for obtaining stable performance estimates, as it reduces sensitivity to any particular data partition and gives a clearer picture of bias-variance trade-offs~\cite{CrossValidation2000,MTR2022b}. Combining cross-validation with grid search for hyperparameter tuning has been shown to improve predictive performance without introducing overfitting~\cite{Ranjan2019,Lim2022}. To determine whether one model genuinely outperforms another, statistical tests such as the paired Student's $t$-test or the Wilcoxon signed-rank test are applied to the per-fold error distributions, distinguishing real performance differences from random variation~\cite{Smucker2007,IRTestStats2007}.
+
+\section{Methodology}
+
+\subsection{Exploratory Data Analysis and Data Preprocessing}
+
+The dataset provided by e-REDES comprises 72,027 PTD-level records spanning 308 Portuguese municipalities, with 32 raw variables covering transformer capacity, utilization levels, contracted power, public lighting consumption, and geographic identifiers. After preprocessing, the working dataset was reduced to 68,963 records and 17 modelling features.
+
+\subsubsection{Missing Value Treatment}
+Two columns with over 95\% missing values (\texttt{Pot\_Geracao\_kW} and \texttt{Geracao\_per\_Cliente}) were dropped entirely. Rows where the utilization field was labelled ``N/D'' (undetermined) were removed, along with any record missing a valid \texttt{PFolga\_PTD}, \texttt{D\_PTD}, or \texttt{Util\_Decimal} value. For \texttt{Pot\_Contratada\_kVA} and \texttt{PContratada\_per\_Cliente}, missing entries were imputed with the within-group median grouped by \texttt{Tipo Construtivo}, preserving structural differences between transformer categories.
+
+\subsubsection{Categorical Encoding}
+The categorical variable \texttt{Tipo Construtivo} was encoded via One-Hot Encoding (OHE) with \texttt{drop\_first=True} to avoid dummy-variable collinearity. Categories representing fewer than 2\% of records were consolidated into a single ``Outros'' category before encoding.
+
+\subsubsection{Feature Selection and Leakage Prevention}
+Geographic identifiers, coordinate columns, redundant count variables (\texttt{N\_Luminarias}, \texttt{N\_Lampadas}), and intermediate pipeline outputs (\texttt{D\_PTD}, \texttt{D\_PTD\_LED}, \texttt{PVE\_PTD}) were removed. Three variables were identified as data leakage sources and excluded from all predictive models: \texttt{Util\_Decimal} (the raw utilization rate, which directly determines \texttt{PFolga\_PTD}), \texttt{PTD\_Saturado} (a binary flag derived from \texttt{Util\_Decimal}), and \texttt{Util\_Ordinal} (an ordinal encoding of the utilization band). For the classification task, \texttt{PFolga\_PTD} was additionally excluded as it is derived from the same utilization. The final feature set comprises 17 variables including transformer capacity, contracted power, number of clients, public lighting power, LED ratio, and OHE columns for transformer type.
+
+\subsubsection{Normalization}
+All continuous features were standardized using Z-score normalization (StandardScaler: $\tilde{x} = (x - \mu) / \sigma$). The scaler was fitted exclusively on the training partition of each cross-validation fold and applied to the corresponding test partition, preventing data leakage through the normalization step. Binary OHE columns were not normalized.
+
+\subsubsection{Discretization for Classification}
+\label{sec:discretization}
+To derive the classification target \texttt{utilizRede}, two strategies were compared: (i) fixed domain intervals (0--40\% / 40--80\% / $>$80\%) and (ii) tertile-based quantile discretization (\texttt{pd.qcut}, $q=3$). The fixed-interval approach produced a 5.3$\times$ class imbalance (51.1\% \textit{baixo}, 39.3\% \textit{medio}, 9.6\% \textit{alto}), which would bias models toward the majority class. Tertile discretization reduces this imbalance to 2.1$\times$ by using data-driven boundaries ($p_{33}=0.39$, $p_{67}=0.59$) that split the medium and high groups more evenly (51.1\% \textit{baixo}, 24.9\% \textit{medio}, 24.0\% \textit{alto}). The \textit{baixo} class remains dominant under both strategies because a large fraction of PTDs share exactly the value \texttt{Util\_Decimal}=0.39, which happens to coincide with the 40\% fixed boundary. Tertile discretization was adopted as it gives the best achievable balance on this dataset.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.95\textwidth]{../../../fig_utilizRede_distribuicao}
+\caption{Derivation of \textit{utilizRede}. \textit{Left:} Distribution of \texttt{Util\_Decimal} with tertile boundaries at $p_{33}=0.39$ and $p_{67}=0.59$. \textit{Centre:} Class counts after tertile discretization; the \textit{baixo} class remains dominant (51.1\%) due to value concentration at 0.39. \textit{Right:} Boxplots of \texttt{Util\_Decimal} by class, confirming clear separation of medians despite overlapping tails.}
+\label{fig:utilizRede}
+\end{figure*}
+
+\subsection{Regression Models (\textit{PFolga\_PTD})}
+
+All regression models were evaluated using 10-fold cross-validation (\texttt{KFold}, \texttt{shuffle=True}, \texttt{random\_state=42}), with StandardScaler fitted on each training fold and applied to the corresponding test fold. Performance was measured via MAE and RMSE, reported as mean $\pm$ standard deviation across folds.
+
+\subsubsection{Simple Linear Regression (Baseline)}
+A univariate baseline was established using \texttt{Cap\_PTD\_kVA} as the sole predictor. This variable was selected due to its highest Pearson correlation with \texttt{PFolga\_PTD} among all non-leakage features ($r \approx 0.96$), reflecting the physically intuitive relationship that a transformer's headroom is bounded by its installed capacity. The mean estimated equation across the 10 folds is:
+\begin{equation}
+\widehat{PFolga} = 0.5938 \times Cap\_PTD\_kVA - 32.19
+\end{equation}
+
+\subsubsection{Multiple Linear Regression}
+An Ordinary Least Squares (OLS) model was trained on all 17 features to quantify the incremental gain from the full feature set over the univariate baseline.
+
+\subsubsection{Decision Tree Regressor}
+An inner 3-fold GridSearchCV was applied to select hyperparameters, exploring \texttt{max\_depth} $\in \{3, 5, 7, 10, 15\}$ and \texttt{min\_samples\_leaf} $\in \{20, 50, 100\}$, scored by negative MAE. The optimal configuration (\texttt{max\_depth}=10, \texttt{min\_samples\_leaf}=20) was then used in the outer 10-fold loop.
+
+\subsubsection{Support Vector Regression (SVR)}
+Due to the $\mathcal{O}(n^2)$--$\mathcal{O}(n^3)$ computational complexity of kernel SVMs, kernel selection and evaluation were conducted on a random subsample of 10,000 records ($\approx$14.5\% of the dataset, $C=10$, $\varepsilon=0.1$). Three kernels were compared via 5-fold CV: \textit{linear} (MAE = 32.90 kVA), \textit{RBF} (MAE = 41.35 kVA), and \textit{polynomial} (MAE = 57.94 kVA). The \textit{linear} kernel was adopted for the final 10-fold evaluation. SVR results are therefore indicative and not directly comparable to models trained on the full dataset.
+
+\subsubsection{Artificial Neural Network (MLP Regressor)}
+Three architectures were compared on an 80/20 split to select the best configuration:
+\begin{itemize}
+  \item \textbf{Config~1} -- Shallow: one hidden layer (64 neurons); no L2; $\eta = 10^{-3}$; validation MAE = 32.02~kVA.
+  \item \textbf{Config~2} -- Deep + L2: three layers (128--64--32); $\alpha = 10^{-4}$; $\eta = 10^{-3}$; validation MAE = 31.41~kVA.
+  \item \textbf{Config~3} -- Deep + low LR: three layers (256--128--64); no L2; $\eta = 5{\times}10^{-4}$; validation MAE = 31.32~kVA.
+\end{itemize}
+All configurations used ReLU activation, the Adam optimizer, \texttt{max\_iter}=200, and early stopping (\texttt{n\_iter\_no\_change}=10, \texttt{validation\_fraction}=0.1). Config~3 achieved the lowest validation MAE and was selected for the outer 10-fold evaluation.
+
+\subsection{Classification Models (\textit{utilizRede})}
+
+Classification models were evaluated with 10-fold Stratified Cross-Validation (\texttt{StratifiedKFold}) to preserve class proportions in every fold. Metrics reported are weighted Accuracy, Precision, Recall, and F1-score, plus per-class F1.
+
+\subsubsection{Decision Tree Classifier}
+An inner 3-fold GridSearchCV (scoring: weighted F1) was applied over the same grid as the regression task: \texttt{max\_depth} $\in \{3, 5, 7, 10, 15\}$ and \texttt{min\_samples\_leaf} $\in \{20, 50, 100\}$.
+
+\subsubsection{Artificial Neural Network (MLP Classifier)}
+The same three architectural configurations were retested for classification (\texttt{max\_iter}=300, same early stopping settings). Configuration selection was performed on an 80/20 stratified split using weighted F1-score.
+
+\subsubsection{Support Vector Machine (SVC)}
+Kernel selection was conducted via 5-fold CV on a subsample of 10,000 records ($C=10$), comparing \textit{linear}, \textit{RBF}, and \textit{polynomial} kernels. The best kernel was used in the 10-fold evaluation on the same subsample.
+
+\subsubsection{K-Nearest Neighbors (KNN)}
+Due to the $\mathcal{O}(n \cdot d)$ prediction cost at inference, KNN was evaluated on a subsample of 20,000 records. The optimal $K$ was selected via 5-fold CV from $K \in \{1, 3, 5, 7, 10, 15, 20, 30, 50\}$, maximizing weighted F1-score.
+
+\subsection{Model Evaluation and Validation}
+
+\subsubsection{Cross-Validation and Hyperparameter Tuning}
+Both pipelines used 10-fold CV as the primary evaluation strategy. GridSearchCV with an inner 3-fold loop was used for Decision Tree hyperparameter optimization in both tasks. ANN architecture selection was performed through a manual search over three predefined configurations evaluated on a held-out validation set. Kernel selection for SVM and $K$ selection for KNN were conducted through CV on the respective subsamples.
+
+\subsubsection{Statistical Significance Testing}
+To determine whether performance differences between the two best models are statistically significant, the following protocol was applied to the per-fold error vectors: (i) the Shapiro-Wilk test assessed normality of the fold-wise differences; (ii) if differences were normally distributed ($p > 0.05$), the paired Student's $t$-test was used; otherwise, the non-parametric Wilcoxon signed-rank test was applied. All tests were conducted at $\alpha = 0.05$.
+
+\section{Results and Discussion}
+
+\subsection{Regression Results (\textit{PFolga\_PTD})}
+
+\subsubsection{Model Performance}
+
+Table~\ref{tab:regression_results} summarises the 10-fold cross-validation results for all five regression models. The \textbf{Neural Network} (Config~3: 256--128--64, $\eta=5{\times}10^{-4}$, early stopping) achieved the lowest error across both metrics, with MAE = 31.32 $\pm$ 0.51~kVA and RMSE = 49.65 $\pm$ 1.52~kVA. The \textbf{Decision Tree} (GridSearch: \texttt{max\_depth}=10, \texttt{min\_samples\_leaf}=20) ranked second with MAE = 32.07 $\pm$ 0.47~kVA and RMSE = 52.93 $\pm$ 2.07~kVA. The SVR (\textit{linear} kernel, subsample) and Multiple Linear Regression followed closely, both near 33~kVA MAE, while the Simple Linear Regression baseline (single predictor \texttt{Cap\_PTD\_kVA}) reached MAE = 50.75 $\pm$ 0.38~kVA.
+
+\begin{table}[htbp]
+\centering
+\caption{Regression Results -- 10-Fold Cross-Validation}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{MAE (kVA)} & \textbf{MAE std} & \textbf{RMSE (kVA)} & \textbf{RMSE std} \\
+\midrule
+Neural Network      & 31.32 & 0.51 & 49.65 & 1.52 \\
+Decision Tree       & 32.07 & 0.47 & 52.93 & 2.07 \\
+SVR (linear)\textsuperscript{$\dagger$} & 32.89 & 1.91 & 52.78 & 5.54 \\
+Multiple Lin. Reg.  & 33.78 & 0.38 & 52.41 & 1.43 \\
+Simple Lin. Reg.    & 50.75 & 0.38 & 74.97 & 0.67 \\
+\bottomrule
+\end{tabular}
+}
+\vspace{1mm}
+\footnotesize{\textsuperscript{$\dagger$}Evaluated on a subsample of 10,000 records; not directly comparable to full-dataset models.}
+\label{tab:regression_results}
+\end{table}
+
+Relative to the mean target ($\bar{y} = 147.98$~kVA), the Neural Network achieves a relative MAE of 21.2\%---a 38.3\% reduction compared to the Simple Linear Regression baseline (34.3\% relative MAE) and a 7.3\% reduction compared to Multiple Linear Regression. The three non-linear models (NN, DT, SVR) all cluster between 31 and 33~kVA MAE, suggesting that without the utilization rate (\texttt{Util\_Decimal}, excluded as leakage), the remaining features share a common information ceiling for predicting \texttt{PFolga\_PTD}.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.95\textwidth]{../../../fig_comparacao_regressao}
+\caption{Comparison of regression models by MAE (left) and RMSE (right) under 10-fold CV. Error bars denote $\pm$1 standard deviation across folds. The Neural Network and Decision Tree cluster near 31--33~kVA, while Simple Linear Regression lags substantially at 50.75~kVA. SVR results ($\dagger$) are based on a 10,000-record subsample and are shown for reference only.}
+\label{fig:comparacao_reg}
+\end{figure*}
+
+\subsubsection{Learning Curves}
+Learning curves were computed on a subsample of 20,000 records (5-fold CV) for the two best models. For the \textbf{Neural Network}, the training MAE starts low and stabilises as the dataset grows, while the validation MAE drops steeply and converges toward the training curve---indicating good generalisation with no meaningful overfitting at the 55,000-record training scale. For the \textbf{Decision Tree} (\texttt{max\_depth}=10), both curves converge to a common plateau with a narrow gap throughout, showing that the \texttt{min\_samples\_leaf}=20 constraint keeps the tree from overfitting despite its depth. Both patterns are visible in Fig.~\ref{fig:lc_reg}.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{../../../fig_learning_curves_reg}
+\caption{Learning curves for the two best regression models (5-fold CV on a 20,000-record subsample). Shaded bands denote $\pm$1 std. \textit{Left (Neural Network):} Training and validation MAE converge as more data is used, with no sign of overfitting. \textit{Right (Decision Tree):} Both curves plateau together, confirming that \texttt{min\_samples\_leaf}=20 provides adequate regularisation.}
+\label{fig:lc_reg}
+\end{figure*}
+
+\subsubsection{Statistical Significance}
+The Shapiro-Wilk test applied to the 10 per-fold MAE differences (NN $-$ DT) yielded $W = 0.846$, $p = 0.051 > 0.05$, confirming normality of differences. The paired Student's $t$-test then produced $t = -4.559$ and $p = 0.0014$. Since $p < \alpha = 0.05$, the Neural Network's superiority over the Decision Tree is \textbf{statistically significant}: the observed MAE reduction of $\approx 0.75$~kVA is not attributable to random fold variation. Fig.~\ref{fig:stat_reg} shows the per-fold MAE distributions for the two models.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\columnwidth]{../../../fig_stat_test_reg}
+\caption{Per-fold MAE distributions for the Neural Network and Decision Tree (regression). The Neural Network consistently achieves lower MAE across all 10 folds. Paired $t$-test: $t = -4.559$, $p = 0.0014$.}
+\label{fig:stat_reg}
+\end{figure}
+
+\subsection{Classification Results (\textit{utilizRede})}
+
+\subsubsection{Model Performance}
+Table~\ref{tab:classification_results} presents the 10-fold stratified cross-validation results for all four classification models.
+
+\begin{table}[htbp]
+\centering
+\caption{Classification Results -- 10-Fold Stratified Cross-Validation (weighted metrics)}
+\small
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{lccccccc}
+\toprule
+\textbf{Model} & \textbf{Acc.} & \textbf{Prec.} & \textbf{Recall} & \textbf{F1} & \textbf{F1\textsubscript{\textit{baixo}}} & \textbf{F1\textsubscript{\textit{medio}}} & \textbf{F1\textsubscript{\textit{alto}}} \\
+\midrule
+Neural Network           & 0.715 $\pm$ 0.004 & 0.705 $\pm$ 0.006 & 0.715 $\pm$ 0.004 & 0.707 $\pm$ 0.005 & 0.825 & 0.489 & 0.682 \\
+Decision Tree            & 0.702 $\pm$ 0.004 & 0.690 $\pm$ 0.006 & 0.702 $\pm$ 0.004 & 0.693 $\pm$ 0.006 & 0.817 & 0.465 & 0.665 \\
+SVM (RBF)\textsuperscript{$\dagger$} & 0.692 $\pm$ 0.016 & 0.677 $\pm$ 0.017 & 0.692 $\pm$ 0.016 & 0.678 $\pm$ 0.016 & 0.803 & 0.445 & 0.665 \\
+KNN ($K$=10)\textsuperscript{$\ddagger$} & 0.658 $\pm$ 0.009 & 0.640 $\pm$ 0.010 & 0.658 $\pm$ 0.009 & 0.642 $\pm$ 0.010 & 0.792 & 0.397 & 0.573 \\
+\bottomrule
+\end{tabular}
+}
+\vspace{1mm}
+\footnotesize{\textsuperscript{$\dagger$}Subsample of 10,000 records (best kernel: RBF). \textsuperscript{$\ddagger$}Subsample of 20,000 records (best $K$=10).}
+\label{tab:classification_results}
+\end{table}
+
+The \textbf{Neural Network} (Config~3: 256--128--64, $\eta=5{\times}10^{-4}$) achieved the highest weighted F1 of $0.707 \pm 0.005$, followed by the \textbf{Decision Tree} (GridSearch: \texttt{max\_depth}=10, \texttt{min\_samples\_leaf}=50) with F1 $= 0.693 \pm 0.006$. SVM with RBF kernel and KNN ($K$=10) ranked third and fourth.
+
+Across all models, the \textit{baixo} class consistently achieves the highest per-class F1 (0.79--0.83), while \textit{medio} is the hardest to classify (F1 0.40--0.49). This is expected from the data structure: the \textit{medio} class occupies the middle band ($[0.39, 0.59)$) and shares boundaries with both neighbours, making edge cases ambiguous for any model. The residual class imbalance---\textit{baixo} at 51.1\% even after tertile discretization---further depresses recall and F1 for the smaller classes, as discussed in Section~III-A-5.
+
+Notably, for the classification task the SVM's best kernel is \textbf{RBF} (F1 = 0.679), in contrast to the regression task where the \textit{linear} kernel dominated. This suggests that the class boundaries separating utilization tertiles are non-linearly separable in feature space, whereas predicting the continuous headroom value \texttt{PFolga\_PTD} is better captured by a linear projection of transformer capacity. The normalised confusion matrices in Fig.~\ref{fig:cm} provide a model-by-model breakdown, making the \textit{medio} classification difficulty visible across all four algorithms.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{../../../fig_confusion_matrices_cls}
+\caption{Normalised confusion matrices for all four classification models (20\% hold-out). The \textit{medio} class shows the lowest diagonal values across every model, confirming it as the hardest class to classify. KNN exhibits the most confusion between \textit{medio} and its neighbours.}
+\label{fig:cm}
+\end{figure*}
+
+\subsubsection{Feature Importance}
+The Decision Tree's Gini-based importances reveal a result distinct from the regression task: \texttt{Cap\_per\_Cliente} (capacity per client, imp = 0.658) is by far the most discriminative variable, followed by \texttt{PContratada\_per\_Cliente} (contracted power per client, imp = 0.222). Absolute-size variables (\texttt{Cap\_PTD\_kVA}, imp = 0.045; \texttt{Pot\_Contratada\_kVA}, imp = 0.034) play a secondary role, and public lighting variables (\texttt{P\_IP\_Total}, \texttt{LED\_Ratio}, \texttt{Rate\_Ineficiencia}) contribute less than 1.1\% cumulatively.
+
+This makes physical sense: whether a transformer is lightly or heavily loaded depends not on its installed capacity in isolation, but on how many clients that capacity must serve. A large PTD feeding many clients can be just as saturated as a small PTD with few connections if the per-client load is similar. Per-client ratios capture this loading intensity directly, while absolute capacity alone does not. The near-zero importance of LED-related variables (\texttt{P\_IP\_Total}, \texttt{LED\_Ratio}) reinforces the regression finding: at the individual PTD level, public lighting has a negligible effect on utilization classification. These patterns are summarised in Fig.~\ref{fig:feat_imp}.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{../../../fig_feature_importance_cls}
+\caption{Feature importance for the Decision Tree classifier. \textit{Left:} Gini-based importance; \texttt{Cap\_per\_Cliente} (0.658) and \texttt{PContratada\_per\_Cliente} (0.222) jointly account for 88\% of splitting power. \textit{Right:} Pearson correlation of each feature with \texttt{Util\_Decimal}, confirming that the most important features are those most linearly associated with the target variable.}
+\label{fig:feat_imp}
+\end{figure*}
+
+\subsubsection{Learning Curves and Statistical Significance}
+Learning curves were computed on a subsample of 12,000 records (5-fold CV) for the best model (Neural Network) and worst (KNN, $K$=10). For the Neural Network, validation F1 rises and converges toward the training curve with a narrow gap, indicating good generalisation. For KNN, both curves plateau around F1 $\approx 0.64$ regardless of training size, suggesting the model's distance-based decision rule is structurally ill-suited to this feature space---adding more data would not close the gap with the Neural Network. The divergence between the two models is shown in Fig.~\ref{fig:lc_cls}.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{../../../fig_learning_curves_cls}
+\caption{Learning curves for the best (Neural Network, left) and worst (KNN $K$=10, right) classification models (5-fold CV, 12,000-record subsample). The Neural Network converges with a narrow train--validation gap. KNN plateaus at a lower level regardless of data volume, pointing to a structural limitation rather than a data deficiency.}
+\label{fig:lc_cls}
+\end{figure*}
+
+Regarding statistical significance: the Shapiro-Wilk test on the 10 per-fold F1 differences (NN $-$ DT) yielded $W = 0.949$, $p = 0.654 > 0.05$, confirming normality. The paired Student's $t$-test produced $t = 8.272$ and $p < 0.001$. The Neural Network's superiority over the Decision Tree is therefore \textbf{statistically significant} at $\alpha = 0.05$: the mean F1 gain of $0.0145$ is not attributable to random fold variation. Fig.~\ref{fig:stat_cls} illustrates the per-fold F1 distributions.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\columnwidth]{../../../fig_stat_test_cls}
+\caption{Per-fold weighted F1 distributions for the Neural Network and Decision Tree (classification). The Neural Network scores higher in every fold. Paired $t$-test: $t = 8.272$, $p < 0.001$.}
+\label{fig:stat_cls}
+\end{figure}
+
+\subsection{Limitations and Future Improvements}
+
+\subsubsection{Identified Limitations}
+
+\paragraph{Data Quality and Coverage}
+The preprocessing pipeline removed 3,064 records (4.3\% of the original dataset) due to missing or indeterminate utilization values. A further 18.5\% of PTD utilization entries were flagged as undetermined in the raw data, slightly compromising the representativeness of the modelling dataset. The dataset is a static cross-sectional snapshot: the absence of temporal information (hourly, seasonal, or multi-year profiles) prevents the models from capturing diurnal and seasonal demand patterns, which are known to significantly influence distribution transformer loading.
+
+\paragraph{Target Discretization Artefacts}
+Transforming the continuous \texttt{Util\_Decimal} into three ordinal classes via tertiles introduces artificial decision boundaries at $p_{33}$ and $p_{67}$. PTDs located near these thresholds are structurally ambiguous regardless of model complexity, imposing a hard ceiling on achievable F1-scores that is inherent to the discretization choice rather than a model deficiency.
+
+\paragraph{Computational Subsampling}
+SVR and KNN were evaluated on subsamples of 10,000 and 20,000 records, respectively, due to prohibitive $\mathcal{O}(n^2)$--$\mathcal{O}(n^3)$ and $\mathcal{O}(n \cdot d)$ complexity at full scale. These subsamples represent 14.5\% and 29.0\% of the modelling dataset; the resulting metrics are indicative but not directly comparable to those of the full-dataset models (NN, DT, MLR).
+
+\paragraph{Feature Set and Leakage Exclusions}
+After removing leakage variables, the remaining feature set is dominated by infrastructure-size variables (capacity, contracted power, number of clients). The LED-related variables (\texttt{P\_IP\_Total}, \texttt{LED\_Ratio}, \texttt{Rate\_Ineficiencia}) exhibit weak predictive power for both tasks, limiting the scope of conclusions about the direct impact of LED modernization on network utilization at the PTD level.
+
+\paragraph{Hyperparameter Search Space}
+GridSearchCV for the Decision Tree explored only \texttt{max\_depth} and \texttt{min\_samples\_leaf}; additional parameters such as \texttt{criterion} (Gini vs. entropy) and \texttt{max\_features} were not tuned. ANN architecture selection was limited to three manually defined configurations.
+
+\subsubsection{Proposed Future Improvements}
+
+\begin{itemize}
+  \item \textbf{Ensemble methods:} Random Forest and Gradient Boosting (XGBoost, LightGBM) typically outperform single Decision Trees on tabular data and should be evaluated as direct replacements in both the regression and classification pipelines.
+
+  \item \textbf{Feature engineering and selection:} Applying SHAP values or Recursive Feature Elimination (RFE) to identify and discard low-contribution features could reduce noise and improve generalization. Interaction terms between \texttt{Cap\_PTD\_kVA} and lighting variables may expose synergies not captured by linear correlations.
+
+  \item \textbf{Temporal and dynamic data:} Incorporating hourly or seasonal load profiles -- if made available by e-REDES -- would enable time-aware models (e.g., LSTM, temporal CNNs) capable of forecasting utilization under different demand scenarios, including peak EV charging hours.
+
+  \item \textbf{Scalable KNN and SVM:} Approximate nearest-neighbor algorithms (FAISS, Ball Tree) and kernel approximation methods (Nyström, Random Kitchen Sinks) would allow KNN and SVR to be evaluated on the full 68,963-record dataset, enabling a fair comparison with NN and DT.
+
+  \item \textbf{Bayesian hyperparameter optimization:} Replacing GridSearchCV with tools such as Optuna or Hyperopt would explore larger hyperparameter spaces more efficiently, particularly for the ANN (layer widths, dropout, activation functions).
+
+  \item \textbf{Operational class boundaries:} Collaborating with e-REDES domain experts to define utilization thresholds with operational meaning (e.g., $<$40\%, 40--80\%, $>$80\% aligned with transformer loading standards) would yield classification targets with greater practical relevance and potentially improved inter-class separability.
+\end{itemize}
+
+\section{Conclusion}
+
+This study examined a practical question posed by the Portuguese Distribution System Operator e-REDES: can the capacity freed by replacing inefficient public lighting with LEDs cover the grid demand created by decentralized EV charging, and can Machine Learning models estimate that available capacity reliably enough to support day-to-day grid decisions?
+
+\paragraph{Summary of Results}
+Working from 68,963 PTD records across 308 Portuguese municipalities, two ML pipelines were built and compared. In the \textbf{regression task} (predicting the continuous power slack \textit{PFolga\_PTD}), the \textbf{Neural Network} (256--128--64 layers, Adam, $\eta = 5{\times}10^{-4}$, early stopping) achieved MAE $= 31.32 \pm 0.51$~kVA and RMSE $= 49.65 \pm 1.52$~kVA under 10-fold CV---a relative error of 21.2\% against the mean target of 147.98~kVA and a statistically significant improvement over the second-place Decision Tree ($p = 0.0014$, paired $t$-test). In the \textbf{classification task} (labelling PTD utilization as \textit{baixo}/\textit{medio}/\textit{alto}), the same architecture again ranked first with weighted F1 $= 0.707 \pm 0.005$ and 71.5\% accuracy, ahead of the Decision Tree (F1 $= 0.693$, $p < 0.001$), SVM with RBF kernel (F1 $= 0.678$), and KNN $K$=10 (F1 $= 0.642$).
+
+\paragraph{What the Results Tell Us}
+The Neural Network's consistent first-place finish across both tasks---confirmed by statistical tests in each case---shows that non-linear models extract more information from infrastructure features than linear baselines. The most revealing finding comes from feature importance: \texttt{Cap\_per\_Cliente} (capacity per client) alone accounts for 65.8\% of the Decision Tree's classification power, more than all other variables combined. Grid saturation is determined by how hard each unit of capacity is being worked per served client, not by the size of the transformer in absolute terms. LED-related variables (\texttt{LED\_Ratio}, \texttt{Rate\_Ineficiencia}) had negligible predictive importance in both tasks, which points to a key practical limitation: at the individual PTD level, lighting savings are too small to move the utilization needle on their own. The real benefit of LED modernization is aggregate---nationally, the transition liberates approximately 117.3~MW; in Lisbon district alone, 8.9~MW. That freed headroom is what creates the margin the ML models are trained to quantify.
+
+\paragraph{Outlook}
+The methodology presented here---leakage-aware feature engineering, systematic model comparison, and statistical validation---provides a replicable framework that e-REDES or any DSO could adapt to their own data. The most impactful next steps would be to incorporate temporal load profiles (enabling seasonal and peak-hour analysis), to test ensemble methods such as Random Forest and XGBoost, and to define utilization class boundaries in collaboration with domain engineers rather than from statistical quantiles alone. These extensions would bring the predictive models closer to direct use in grid planning, supporting Portugal's EV infrastructure targets under EU Directive 2014/94/EU.
+
+\begin{thebibliography}{99}
+
+\bibitem{Jain2023}
+A. Jain, ``Mitigating adverse impacts of increased electric vehicle charging on distribution transformers,'' Theses and Dissertations, Mississippi State University, p. 5752, 2023.
+
+\bibitem{IEA2024}
+International Energy Agency (IEA), ``Global EV Outlook 2024: Moving towards increased affordability,'' 2024.
+
+\bibitem{Hilshey2011}
+A. Hilshey, P. Hines, and J. Dowds, ``Estimating the acceleration of transformer aging due to electric vehicle charging,'' in \textit{Proc. IEEE PES General Meeting}, 2011.
+
+\bibitem{Brinkel2020}
+N. B. G. Brinkel et al., ``Should we reinforce the grid? Cost and emission optimization of electric vehicle charging under different transformer limits,'' \textit{Applied Energy}, vol. 276, 2020.
+
+\bibitem{Rajora2024}
+G. L. Rajora et al., ``A review of asset management using artificial intelligence-based machine learning models,'' \textit{IET Generation, Transmission \& Distribution}, 2024.
+
+\bibitem{ISEP2026}
+ISEP, ``Trabalho Pr\'{a}tico -- An\'{a}lise de Dados em Inform\'{a}tica: An\'{a}lise de Desempenho De T\'{e}cnicas de Aprendizagem Autom\'{a}tica (TP2\_ANADI\_2026\_v6),'' 2025/2026.
+
+\bibitem{Chowdhury2025}
+F. R. Chowdhury et al., ``Intelligent Streetlight Control System Using Machine Learning for Adaptive Energy Optimization,'' \textit{Journal of Ecohumanism}, vol. 4, no. 4, pp. 543--564, 2025.
+
+\bibitem{PennState2025}
+Penn State, ``Lighting the way for electric vehicles by using streetlamps as chargers,'' Oct. 2025.
+
+\bibitem{ElShahat2024}
+D. El-Shahat et al., ``Machine learning and deep learning models based grid search cross validation for short-term solar irradiance forecasting,'' \textit{Journal of Big Data}, vol. 11, no. 134, 2024.
+
+\bibitem{ANNBigData2024}
+``ANN models for forecasting tasks,'' \textit{Journal of Big Data}, 2024.
+
+\bibitem{Vanting2021}
+N. B. Vanting et al., ``Deep learning for predicting energy load,'' \textit{Energy Informatics}, vol. 4, 2021.
+
+\bibitem{Ding2022}
+Y. Ding, ``Machine learning methods for building energy benchmarking,'' 2022.
+
+\bibitem{SVMModels2024}
+``SVM Hyperplane Separation Models,'' \textit{Emerging Science Journal}, 2024.
+
+\bibitem{ANNModels2024}
+``ANN Architecture and Models,'' \textit{Emerging Science Journal}, 2024.
+
+\bibitem{DTXGBModels2024}
+``Decision Tree and XGBoost Architectures,'' \textit{Emerging Science Journal}, 2024.
+
+\bibitem{Altmann2010}
+A. Altmann, L. Tolo\c{s}i, O. Sander, and T. Lengauer, ``A comparative study on breast cancer classification with stratified shuffle split and K-fold cross validation via ensembled machine learning,'' \textit{ScienceDirect}, 2010.
+
+\bibitem{Malakouti2023}
+S. M. Malakouti, ``The usage of 10-fold cross-validation and grid search to enhance ML methods performance in solar farm power generation prediction,'' \textit{ScienceDirect}, 2023.
+
+\bibitem{Hull1993}
+D. Hull, ``Using statistical testing in the evaluation of retrieval experiments,'' in \textit{Proc. SIGIR '93}, pp. 329--338, 1993.
+
+\bibitem{RCore2004}
+R Development Core Team, \textit{R: A Language and Environment for Statistical Computing}, R Foundation for Statistical Computing, Vienna, Austria, 2004.
+
+\bibitem{ISEPMetricsRegression}
+ISEP TP2 Guidelines (Evaluation Metrics MAE, RMSE, Learning Curves), 2025/2026.
+
+\bibitem{ISEPMetricsClassification}
+ISEP TP2 Guidelines (Classification Metrics: Accuracy, Precision, Recall, F1-score), 2025/2026.
+
+% --- State of the Art references ---
+
+\bibitem{Heydt2010}
+G. T. Heydt, ``The next generation of power distribution systems,'' \textit{IEEE Transactions on Smart Grid}, 2010.
+
+\bibitem{Rana2025}
+S. Rana, ``AI-Driven Fault Detection and Predictive Maintenance in Electrical Power Systems,'' \textit{American Journal of Advanced Technology}, 2025.
+
+\bibitem{SystematicReviewAI2025}
+``Systematic Review of AI in Fault Detection,'' \textit{IEEE Xplore/ScienceDirect}, 2025.
+
+\bibitem{Badhon2024}
+N. H. Badhon et al., ``TLCNN: Tabular data-based lightweight convolutional neural network for electricity energy demand prediction,'' \textit{ScienceDirect}, 2024.
+
+\bibitem{AlSelwi2024}
+S. M. Al-Selwi et al., ``RNN-LSTM: From applications to modeling techniques and beyond,'' \textit{Journal of King Saud University}, 2024.
+
+\bibitem{Calero2020}
+I. Calero et al., ``Machine Learning-Based Control of Electric Vehicle Charging for Practical Distribution Systems with Solar Generation,'' \textit{IEEE}, 2020.
+
+\bibitem{Hines2011}
+P. Hines et al., ``Estimating the Impact of Electric Vehicle Smart Charging on Distribution Transformer Aging,'' \textit{IEEE}, 2011.
+
+\bibitem{ClementNyns2010}
+K. Clement-Nyns et al., ``The impact of charging plug-in hybrid electric vehicles on a residential distribution grid,'' \textit{IEEE Transactions on Power Systems}, 2010.
+
+\bibitem{DTU2022}
+``Transformer overload prediction in a future energy system: The impact of increasing EV charging demand,'' DTU, 2022.
+
+\bibitem{ARIMA2023}
+``ARIMA-GRU approaches,'' \textit{Sustainability}, 2023.
+
+\bibitem{Elkari2023}
+B. Elkari et al., ``Random forest with feature selection and K-fold cross validation for predicting the electrical and thermal efficiencies of air based photovoltaic-thermal systems,'' \textit{ScienceDirect}, 2023.
+
+\bibitem{Ciulla2019}
+G. Ciulla et al., ``Building energy performance forecasting: a multiple linear regression approach,'' \textit{Applied Energy}, 2019.
+
+\bibitem{Chen2016}
+T. Chen and C. Guestrin, ``XGBoost: A scalable tree boosting system,'' in \textit{Proc. ACM SIGKDD}, 2016.
+
+\bibitem{Velasquez2011}
+J. L. Velasquez-Contreras et al., ``General asset management model in the context of an electric utility,'' \textit{Electric Power Systems Research}, 2011.
+
+\bibitem{MTR2022a}
+M. T. R. et al., ``An Efficient Ensemble Method Using K-Fold Cross Validation for the Early Detection of Benign and Malignant Breast Cancer,'' \textit{IJIE}, vol. 14, 2022.
+
+\bibitem{KNN2023}
+``KNN Classification Report,'' \textit{Journal of Environmental and Agricultural Studies}, 2023.
+
+\bibitem{PrecisionRecall2022}
+``Precision-Recall AUC scores for ML classifiers,'' \textit{Frontiers in Nanotechnology}, 2022.
+
+\bibitem{CrossValidation2000}
+``Cross-Validation Methods,'' \textit{Journal of Mathematical Psychology}, 2000.
+
+\bibitem{MTR2022b}
+M. T. R. et al., ``AdaBoost Ensemble Methods Using K-Fold Cross Validation,'' \textit{Computational Intelligence and Neuroscience}, 2022.
+
+\bibitem{Ranjan2019}
+G. S. K. Ranjan et al., ``K-Nearest Neighbors and Grid Search CV Based Real Time Fault Monitoring System for Industries,'' \textit{IEEE}, 2019.
+
+\bibitem{Lim2022}
+S. C. Lim et al., ``Solar power forecasting using CNN-LSTM hybrid model,'' \textit{Energies}, 2022.
+
+\bibitem{Smucker2007}
+M. D. Smucker et al., ``A Comparison of Statistical Significance Tests for Information Retrieval Evaluation,'' in \textit{Proc. CIKM '07}, 2007.
+
+\bibitem{IRTestStats2007}
+``Information Retrieval Test Statistics,'' \textit{ACM Press}, 2007.
+
+\end{thebibliography}
+
+\end{document}

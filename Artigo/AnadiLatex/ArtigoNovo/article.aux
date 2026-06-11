@@ -1,0 +1,149 @@
+\relax 
+\citation{Jain2023,IEA2024}
+\citation{Hilshey2011,Brinkel2020}
+\citation{Jain2023,Rajora2024}
+\citation{ISEP2026}
+\citation{Chowdhury2025}
+\citation{PennState2025}
+\citation{ISEP2026}
+\citation{ISEP2026}
+\citation{Rajora2024,ElShahat2024}
+\citation{ANNBigData2024,Vanting2021,Ding2022}
+\citation{ANNBigData2024,SVMModels2024,ANNModels2024,DTXGBModels2024}
+\newlabel{sec:abbrev}{{}{1}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{}\protected@file@percent }
+\citation{ISEP2026}
+\citation{Altmann2010,Malakouti2023,ISEPMetricsRegression,ISEPMetricsClassification}
+\citation{Hull1993,RCore2004}
+\citation{Heydt2010,Rana2025}
+\citation{Rajora2024,SystematicReviewAI2025}
+\citation{Badhon2024,AlSelwi2024,Vanting2021}
+\citation{Calero2020}
+\citation{Jain2023,Hines2011}
+\citation{ClementNyns2010}
+\citation{DTU2022,ARIMA2023}
+\citation{Elkari2023}
+\citation{Ciulla2019}
+\citation{Chen2016,ElShahat2024}
+\citation{Badhon2024}
+\citation{Velasquez2011}
+\citation{MTR2022a}
+\citation{KNN2023,PrecisionRecall2022}
+\citation{CrossValidation2000,MTR2022b}
+\citation{Ranjan2019,Lim2022}
+\citation{Smucker2007,IRTestStats2007}
+\@writefile{toc}{\contentsline {section}{\numberline {II}State of the Art}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-A}}Machine Learning in Power System Asset Management}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-B}}EV Charging Impacts and Transformer Capacity}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-C}}Regression Techniques for Load Forecasting}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-D}}Classification of Network Utilization}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {II-E}}Model Evaluation and Statistical Validation}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III}Methodology}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}Exploratory Data Analysis and Data Preprocessing}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-A}1}Missing Value Treatment}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-A}2}Categorical Encoding}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-A}3}Feature Selection and Leakage Prevention}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-A}4}Normalization}{3}{}\protected@file@percent }
+\newlabel{sec:discretization}{{\mbox  {III-A}5}{3}{}{subsubsection.3.1.5}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-A}5}Discretization for Classification}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}Regression Models (\textit  {PFolga\_PTD})}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-B}1}Simple Linear Regression (Baseline)}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-B}2}Multiple Linear Regression}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-B}3}Decision Tree Regressor}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-B}4}Support Vector Regression (SVR)}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-B}5}Artificial Neural Network (MLP Regressor)}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}Classification Models (\textit  {utilizRede})}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-C}1}Decision Tree Classifier}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-C}2}Artificial Neural Network (MLP Classifier)}{3}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-C}3}Support Vector Machine (SVC)}{3}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Derivation of \textit  {utilizRede}. \textit  {Left:} Distribution of \texttt  {Util\_Decimal} with tertile boundaries at $p_{33}=0.39$ and $p_{67}=0.59$. \textit  {Centre:} Class counts after tertile discretization; the \textit  {baixo} class remains dominant (51.1\%) due to value concentration at 0.39. \textit  {Right:} Boxplots of \texttt  {Util\_Decimal} by class, confirming clear separation of medians despite overlapping tails.}}{4}{}\protected@file@percent }
+\newlabel{fig:utilizRede}{{1}{4}{}{figure.1}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-C}4}K-Nearest Neighbors (KNN)}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Model Evaluation and Validation}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}1}Cross-Validation and Hyperparameter Tuning}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {III-D}2}Statistical Significance Testing}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Results and Discussion}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-A}}Regression Results (\textit  {PFolga\_PTD})}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {IV-A}1}Model Performance}{4}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Regression Results -- 10-Fold Cross-Validation}}{4}{}\protected@file@percent }
+\newlabel{tab:regression_results}{{I}{4}{}{table.1}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {IV-A}2}Learning Curves}{4}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {IV-A}3}Statistical Significance}{4}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Comparison of regression models by MAE (left) and RMSE (right) under 10-fold CV. Error bars denote $\pm $1 standard deviation across folds. The Neural Network and Decision Tree cluster near 31--33~kVA, while Simple Linear Regression lags substantially at 50.75~kVA. SVR results ($\dagger $) are based on a 10,000-record subsample and are shown for reference only.}}{5}{}\protected@file@percent }
+\newlabel{fig:comparacao_reg}{{2}{5}{}{figure.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Learning curves for the two best regression models (5-fold CV on a 20,000-record subsample). Shaded bands denote $\pm $1 std. \textit  {Left (Neural Network):} Training and validation MAE converge as more data is used, with no sign of overfitting. \textit  {Right (Decision Tree):} Both curves plateau together, confirming that \texttt  {min\_samples\_leaf}=20 provides adequate regularisation.}}{5}{}\protected@file@percent }
+\newlabel{fig:lc_reg}{{3}{5}{}{figure.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Per-fold MAE distributions for the Neural Network and Decision Tree (regression). The Neural Network consistently achieves lower MAE across all 10 folds. Paired $t$-test: $t = -4.559$, $p = 0.0014$.}}{5}{}\protected@file@percent }
+\newlabel{fig:stat_reg}{{4}{5}{}{figure.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-B}}Classification Results (\textit  {utilizRede})}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {IV-B}1}Model Performance}{5}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Classification Results -- 10-Fold Stratified Cross-Validation (weighted metrics)}}{6}{}\protected@file@percent }
+\newlabel{tab:classification_results}{{II}{6}{}{table.2}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {IV-B}2}Feature Importance}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {IV-B}3}Learning Curves and Statistical Significance}{6}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Per-fold weighted F1 distributions for the Neural Network and Decision Tree (classification). The Neural Network scores higher in every fold. Paired $t$-test: $t = 8.272$, $p < 0.001$.}}{6}{}\protected@file@percent }
+\newlabel{fig:stat_cls}{{8}{6}{}{figure.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-C}}Limitations and Future Improvements}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {IV-C}1}Identified Limitations}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {IV-C}1a}Data Quality and Coverage}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {IV-C}1b}Target Discretization Artefacts}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {IV-C}1c}Computational Subsampling}{6}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Normalised confusion matrices for all four classification models (20\% hold-out). The \textit  {medio} class shows the lowest diagonal values across every model, confirming it as the hardest class to classify. KNN exhibits the most confusion between \textit  {medio} and its neighbours.}}{7}{}\protected@file@percent }
+\newlabel{fig:cm}{{5}{7}{}{figure.5}{}}
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {IV-C}1d}Feature Set and Leakage Exclusions}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {IV-C}1e}Hyperparameter Search Space}{7}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {\mbox  {IV-C}2}Proposed Future Improvements}{7}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Feature importance for the Decision Tree classifier. \textit  {Left:} Gini-based importance; \texttt  {Cap\_per\_Cliente} (0.658) and \texttt  {PContratada\_per\_Cliente} (0.222) jointly account for 88\% of splitting power. \textit  {Right:} Pearson correlation of each feature with \texttt  {Util\_Decimal}, confirming that the most important features are those most linearly associated with the target variable.}}{8}{}\protected@file@percent }
+\newlabel{fig:feat_imp}{{6}{8}{}{figure.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Learning curves for the best (Neural Network, left) and worst (KNN $K$=10, right) classification models (5-fold CV, 12,000-record subsample). The Neural Network converges with a narrow train--validation gap. KNN plateaus at a lower level regardless of data volume, pointing to a structural limitation rather than a data deficiency.}}{8}{}\protected@file@percent }
+\newlabel{fig:lc_cls}{{7}{8}{}{figure.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {V}Conclusion}{8}{}\protected@file@percent }
+\bibcite{Jain2023}{1}
+\bibcite{IEA2024}{2}
+\bibcite{Hilshey2011}{3}
+\bibcite{Brinkel2020}{4}
+\bibcite{Rajora2024}{5}
+\bibcite{ISEP2026}{6}
+\bibcite{Chowdhury2025}{7}
+\bibcite{PennState2025}{8}
+\bibcite{ElShahat2024}{9}
+\bibcite{ANNBigData2024}{10}
+\bibcite{Vanting2021}{11}
+\bibcite{Ding2022}{12}
+\bibcite{SVMModels2024}{13}
+\bibcite{ANNModels2024}{14}
+\bibcite{DTXGBModels2024}{15}
+\bibcite{Altmann2010}{16}
+\bibcite{Malakouti2023}{17}
+\bibcite{Hull1993}{18}
+\bibcite{RCore2004}{19}
+\bibcite{ISEPMetricsRegression}{20}
+\bibcite{ISEPMetricsClassification}{21}
+\bibcite{Heydt2010}{22}
+\bibcite{Rana2025}{23}
+\bibcite{SystematicReviewAI2025}{24}
+\bibcite{Badhon2024}{25}
+\bibcite{AlSelwi2024}{26}
+\bibcite{Calero2020}{27}
+\bibcite{Hines2011}{28}
+\bibcite{ClementNyns2010}{29}
+\bibcite{DTU2022}{30}
+\bibcite{ARIMA2023}{31}
+\bibcite{Elkari2023}{32}
+\bibcite{Ciulla2019}{33}
+\bibcite{Chen2016}{34}
+\bibcite{Velasquez2011}{35}
+\bibcite{MTR2022a}{36}
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-}0a}Summary of Results}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-}0b}What the Results Tell Us}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{\numberline {\mbox  {V-}0c}Outlook}{9}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{References}{9}{}\protected@file@percent }
+\bibcite{KNN2023}{37}
+\bibcite{PrecisionRecall2022}{38}
+\bibcite{CrossValidation2000}{39}
+\bibcite{MTR2022b}{40}
+\bibcite{Ranjan2019}{41}
+\bibcite{Lim2022}{42}
+\bibcite{Smucker2007}{43}
+\bibcite{IRTestStats2007}{44}
+\gdef \@abspage@last{10}
